@@ -7,6 +7,8 @@ class MyWidget(QWidget):
 
     def mousePressEvent(self, event):
         print("Mouse clicked at", event.x(), event.y())
+        
+
 
 app = QApplication([])
 widget = MyWidget()
