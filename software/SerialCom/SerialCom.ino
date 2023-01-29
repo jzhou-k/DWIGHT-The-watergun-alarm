@@ -4,10 +4,12 @@ String sentence = "end of sentence";
 float x_angle = 0;
 float y_angle = 0;
 String angle_info = "";
-Servo myservo;
+Servo xservo;
+Servo yservo;
 
 
 float parseXinfo(String data);
+float parseYinfo(String data);
 void serialEvent();
 
 void setup() {
@@ -15,8 +17,8 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
-  myservo.attach(9);
-
+  xservo.attach(9);
+  yservo.attach(8); 
 }
 
 
@@ -24,7 +26,8 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   serialEvent();
-  myservo.write(x_angle);
+  xservo.write(x_angle);
+  yservo.write(y_angle); 
 
 }
 
@@ -44,7 +47,7 @@ void serialEvent()
     {
 
       x_angle = parseXinfo(angle_info);
-      Serial.println(x_angle);
+      y_angle = parseYinfo(angle_info);
       angle_info = ""; 
     }
 
@@ -61,7 +64,9 @@ float parseXinfo(String data)
   return data.toFloat();
 }
 
-double parseYinfo()
+float parseYinfo(String data)
 {
-  //lol
+  data.remove(data.indexOf("X"),data.indexOf("Y")+1);
+  data.remove(data.indexOf("#")); 
+  return data.toFloat();
 }

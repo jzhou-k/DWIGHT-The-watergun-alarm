@@ -2,6 +2,9 @@ import serial
 import datetime
 import time
 import threading
+from PyQt5.QtWidgets import QApplication, QWidget
+
+
 
 
 arduino = serial.Serial('COM3', 115200, timeout=.1)
@@ -83,27 +86,29 @@ def writeData(data):
     #         #data = data.rstrip("#")
     #         print(data, end='')   
 
-writeData("X170Y25#")
-writeData("X0Y25#")
-angle = 0; 
-while True: 
-    data = arduino.read().decode()
-    if data: 
-        #data = data.rstrip("#")
-        print(data, end='')   
+#format X{ANGLE}Y{ANGLE}# 
 
+class MyWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setGeometry(0, 0, 800, 600)
 
-    for angle in range(0, 180, 5): 
-        data = "X{}Y25#".format(angle)
-        #print(data) 
+    def mousePressEvent(self, event):
+        #print("Mouse clicked at", event.x(), event.y())
+        self.handle_mouse_click(event.x(),event.y())
+
+    def handle_mouse_click(self,x,y):
+        data = "X{}Y{}#".format(180-((x/800)*180), 180 - (y/600)*180)
         writeData(data)
-    for angle in range(180,0,-5): 
-        data = "X{}Y25#".format(angle)
-        #print(data)
-        writeData(data)
+        print(data)
+        
 
-#map 
 
+
+app = QApplication([])
+widget = MyWidget()
+widget.show()
+app.exec_()
 
 
 
