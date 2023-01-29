@@ -81,7 +81,7 @@ def writeData(data):
             #data = data.rstrip("#")
             print(data, end='')   
 
-writeData("X25Y25#")
+writeData("X90Y25#")
 
 # ***** START ALARM FUNCTION ***** 
 # t1 = threading.Thread(target=alarmFunction)

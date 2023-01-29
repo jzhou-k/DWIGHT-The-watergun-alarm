@@ -23,6 +23,13 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  serialEvent();
+  myservo.write(x_angle);
+
+}
+
+void serialEvent()
+{
   if (Serial.available() > 0)
   {
     char data = Serial.read();
@@ -35,20 +42,12 @@ void loop() {
     //Serial.println(Serial.available());
     if (data == '#')
     {
- 
-      x_angle = parseXinfo(angle_info); 
-      
+
+      x_angle = parseXinfo(angle_info);
       Serial.println(x_angle);
     }
 
   }
-
-
-}
-
-void serialEvent()
-{
-
 }
 
 float parseXinfo(String data)
