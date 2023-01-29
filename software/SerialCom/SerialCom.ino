@@ -35,7 +35,10 @@ void loop() {
     //Serial.println(Serial.available());
     if (data == '#')
     {
-      Serial.print("what");
+ 
+      x_angle = parseXinfo(angle_info); 
+      
+      Serial.println(x_angle);
     }
 
   }
@@ -53,6 +56,7 @@ float parseXinfo(String data)
   // X25Y25#
   data.remove(data.indexOf("Y")); //removes Y25 since remove() gets rid of everything to the end of the string
   data.remove(data.indexOf("X"), 1); //removes X
+
   return data.toFloat();
 }
 
