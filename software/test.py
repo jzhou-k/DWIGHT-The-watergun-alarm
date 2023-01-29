@@ -3,6 +3,7 @@ import datetime
 import time
 import threading
 
+
 arduino = serial.Serial('COM3', 115200, timeout=.1)
 print("Helloworld")
 
@@ -73,15 +74,40 @@ def alarmFunction():
     stop_event.set()
 
 def writeData(data): 
-    time.sleep(2)
+    time.sleep(1)
     arduino.write(data.encode())
-    while True: 
-        data = arduino.read().decode()
-        if data: 
-            #data = data.rstrip("#")
-            print(data, end='')   
+    # *****READS DATA******
+    # while True: 
+    #     data = arduino.read().decode()
+    #     if data: 
+    #         #data = data.rstrip("#")
+    #         print(data, end='')   
 
-writeData("X90Y25#")
+writeData("X170Y25#")
+writeData("X0Y25#")
+angle = 0; 
+while True: 
+    data = arduino.read().decode()
+    if data: 
+        #data = data.rstrip("#")
+        print(data, end='')   
+
+
+    for angle in range(0, 180, 5): 
+        data = "X{}Y25#".format(angle)
+        #print(data) 
+        writeData(data)
+    for angle in range(180,0,-5): 
+        data = "X{}Y25#".format(angle)
+        #print(data)
+        writeData(data)
+
+#map 
+
+
+
+
+#     #time.sleep(1)
 
 # ***** START ALARM FUNCTION ***** 
 # t1 = threading.Thread(target=alarmFunction)

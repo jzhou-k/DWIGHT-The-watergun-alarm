@@ -34,7 +34,7 @@ void serialEvent()
   {
     char data = Serial.read();
     angle_info += data;
-    Serial.println(data);
+    // Serial.println(data);
 
 
 
@@ -45,8 +45,10 @@ void serialEvent()
 
       x_angle = parseXinfo(angle_info);
       Serial.println(x_angle);
+      angle_info = ""; 
     }
 
+    
   }
 }
 
