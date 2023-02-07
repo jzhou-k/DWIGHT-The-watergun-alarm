@@ -9,7 +9,9 @@ eye_cascade=cv2.CascadeClassifier(cv2.data.haarcascades +'haarcascade_eye.xml')
 url='http://192.168.2.41'
 ##'''cam.bmp / cam-lo.jpg /cam-hi.jpg / cam.mjpeg '''
 cv2.namedWindow("Live Transmission", cv2.WINDOW_AUTOSIZE)
- 
+cap = cv2.VideoCapture("http://192.168.2.41/800x600.mjpeg")
+
+
 print("Hello world")
 while True:
     img_resp=urllib.request.urlopen(url)
