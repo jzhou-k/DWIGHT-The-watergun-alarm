@@ -1,5 +1,6 @@
 
 
+import math
 import cv2
 import urllib.request 
 import requests 
@@ -25,7 +26,11 @@ openCamera = False
 #default is the center of the screen 
 x_point = 400
 y_point = 300 
-
+x_angle = 0 
+y_angle = 90 
+#distance measured in cm 
+distance = 15 
+conversionFactor = 30 
 
 def readUrl(): 
     data = esp32.readline() 
@@ -53,9 +58,11 @@ while True:
         cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,255),3)
         roi_gray = gray[y:y+h, x:x+w]
         roi_color = img[y:y+h, x:x+w]
-        x_point = x + (w/2)
-        y_point = y + (h/2)
-        data = "X{}Y{}#".format(180 - ((x_point/1000)*180), (y_point/600)*180) 
+        x_point = (x + (w/2))/800 * conversionFactor
+        y_point = (y + (h/2))/600 * conversionFactor 
+        x_angle  = 90 - math.atan((x_point - 15)/distance)
+        y_angle = 90 - math.atan((y_point - 15)/distance)
+        data = "X{}Y{}#".format(180 - ((x_point/800)*conversionFactor), (y_point/600)*conversionFactor) 
         writeData(data)
         print(data)
         # eyes = eye_cascade.detectMultiScale(roi_gray)
