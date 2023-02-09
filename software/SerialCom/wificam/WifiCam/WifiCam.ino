@@ -3,22 +3,26 @@
 #include <Servo.h>
 
 float x_angle = 90;
-float y_angle = 0;
+float y_angle = 90;
 float rawx_angle = 90; 
-float rawy_angle = 0; 
+float rawy_angle = 90; 
 String angle_info = "";
 Servo xservo;
 Servo yservo;
+Servo trigger; 
 static const int yServoPin = 32;
 static const int xServoPin = 33;
+static const int triggerServoPin = 12; //to be determined 
 float parseXinfo(String data);
 float parseYinfo(String data);
 void serialEvent();
+void trigger(); 
 
 
 static const char* WIFI_SSID = "BELL011";
 static const char* WIFI_PASS = "69D19EFEA96F";
 esp32cam::Resolution initialResolution;
+
 
 WebServer server(80);
 
@@ -44,9 +48,17 @@ setup()
 
   );
 
+  trigger.attach(
+    triggerServoPin,
+    Servo::CHANNEL_NOT_ATTACHED,
+    45,
+    120  
+  )
+
   xservo.write(0);
   delay(1000);
   yservo.write(90);
+  trigger.write(0); 
 
 
 
@@ -95,7 +107,7 @@ void loop()
   
   xservo.write(x_angle);
   yservo.write(y_angle); 
-
+  delay(10); 
 
 }
 
@@ -133,7 +145,7 @@ void serialEvent()
 
 float parseXinfo(String data)
 {
-  // X25Y25#
+  // X25Y25Z0#
   data.remove(data.indexOf("Y")); //removes Y25 since remove() gets rid of everything to the end of the string
   data.remove(data.indexOf("X"), 1); //removes X
 
@@ -143,6 +155,29 @@ float parseXinfo(String data)
 float parseYinfo(String data)
 {
   data.remove(data.indexOf("X"),data.indexOf("Y")+1);
-  data.remove(data.indexOf("#")); 
+  data.remove(data.indexOf("Z"));
   return data.toFloat();
 }
+
+int parseZinfo(String data)
+{
+  data.remove(data.indexOf("X"),data.indexOf("Z")+1);
+  data.remove(data.indexOf("#")); 
+  return data.toInt();
+}
+
+void trigger()
+{
+  for (int i = 0; i < 5; i++)
+  {
+    trigger.write(90)
+    delay(10)
+    trigger.write(0) 
+    delay(10)
+  }
+}
+
+
+//initial calibration of watergun -> lean back the watergun 
+//if trigger = true -> shooot 
+//if face stay in place for 5 sec (with tolerace) shoot 

@@ -29,8 +29,8 @@ y_point = 300
 x_angle = 0 
 y_angle = 90 
 #distance measured in cm 
-distance = 15 
-conversionFactor = 30 
+distance = 18
+conversionFactor = 40 
 
 def readUrl(): 
     data = esp32.readline() 
@@ -60,9 +60,9 @@ while True:
         roi_color = img[y:y+h, x:x+w]
         x_point = (x + (w/2))/800 * conversionFactor
         y_point = (y + (h/2))/600 * conversionFactor 
-        x_angle  = 90 - math.atan((x_point - 15)/distance)
-        y_angle = 90 - math.atan((y_point - 15)/distance)
-        data = "X{}Y{}#".format(180 - ((x_point/800)*conversionFactor), (y_point/600)*conversionFactor) 
+        x_angle  = 90 - math.degrees(math.atan((x_point - 20)/distance))
+        y_angle = 90 + math.degrees(math.atan((y_point - 20)/distance))
+        data = "X{}Y{}#".format(x_angle, y_angle) 
         writeData(data)
         print(data)
         # eyes = eye_cascade.detectMultiScale(roi_gray)
@@ -70,8 +70,12 @@ while True:
         #     cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
     
     cv2.imshow('Video', img)
-
-
+   
+    # x_angle  = 90 - math.atan((x_point - 15)/distance)
+    # y_angle = 90 - math.atan((y_point - 15)/distance)
+    # data = "X{}Y{}#".format(x_angle, y_angle) 
+    # writeData(data)
+    # print(data)
 
 
     # img_resp=urllib.request.urlopen(url)
