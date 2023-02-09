@@ -4,7 +4,7 @@
 
 float x_angle = 90;
 float y_angle = 0;
-float rawx_angle = 0; 
+float rawx_angle = 90; 
 float rawy_angle = 0; 
 String angle_info = "";
 Servo xservo;
@@ -122,7 +122,7 @@ void serialEvent()
         x_angle = rawx_angle; 
       }
       if(!((rawy_angle-x_angle)>-5 && (rawy_angle-x_angle) < 5)){
-        x_angle = rawy_angle; 
+        y_angle = rawy_angle; 
       }
       angle_info = ""; 
     }
