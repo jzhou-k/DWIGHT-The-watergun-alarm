@@ -4,19 +4,28 @@
 
 float x_angle = 90;
 float y_angle = 90;
-float rawx_angle = 90; 
-float rawy_angle = 90; 
+float rawx_angle = 90;
+float rawy_angle = 90;
+int triggerInfo = 0;
 String angle_info = "";
+
+
 Servo xservo;
 Servo yservo;
-Servo trigger; 
+Servo triggerServo;
 static const int yServoPin = 32;
 static const int xServoPin = 33;
-static const int triggerServoPin = 12; //to be determined 
+static const int triggerServoPin = 12; //to be determined
+
+boolean data_received = false ;
+
+
+void calibrateXangle();
+void calibrateYangle();
 float parseXinfo(String data);
 float parseYinfo(String data);
 void serialEvent();
-void trigger(); 
+void trigger();
 
 
 static const char* WIFI_SSID = "BELL011";
@@ -26,8 +35,7 @@ esp32cam::Resolution initialResolution;
 
 WebServer server(80);
 
-void
-setup()
+void setup()
 {
   Serial.begin(115200);
   Serial.println();
@@ -37,28 +45,27 @@ setup()
   yservo.attach(
     yServoPin,
     Servo::CHANNEL_NOT_ATTACHED,
-    45,
-    120
+    50,
+    250 
   );
   xservo.attach(
     xServoPin,
     Servo::CHANNEL_NOT_ATTACHED,
-    45,
-    120
+    50,
+    250
 
   );
 
-  trigger.attach(
+  triggerServo.attach(
     triggerServoPin,
     Servo::CHANNEL_NOT_ATTACHED,
-    45,
-    120  
-  )
+    //100, 200 no go 
+    //15, 100 kinda?? 
+    15,
+    200
+  );
 
-  xservo.write(0);
-  delay(1000);
-  yservo.write(90);
-  trigger.write(0); 
+  // triggerServo.write(0);
 
 
 
@@ -98,19 +105,73 @@ setup()
   addRequestHandlers();
   server.begin();
 }
-
+//***********************************************************
 void loop()
 {
   server.handleClient();
+
   
-  serialEvent(); 
+  serialEvent();
+  if(data_received)
+  {
+    xservo.write(x_angle);
+    yservo.write(y_angle);
+  }
   
-  xservo.write(x_angle);
-  yservo.write(y_angle); 
-  delay(10); 
+    
+  //if (triggerInfo) {
+    //trigger();
+  //}
+  delay(1);
+
+}
+//***********************************************************
+
+
+void calibrateEvery()
+{
+  calibrateYangle();
+  delay(1000);
+  trigger(); 
+  delay(1000); 
+  calibrateXangle();
+}
+
+
+void calibrateZangle()
+{
+  delay(100);
+  triggerServo.write(45);
+  delay(200);
+  triggerServo.write(20);
+  delay(500);
+}
+
+void calibrateXangle()
+{
+  delay(5000);
+  xservo.write(45);
+  delay(5000);
+  xservo.write(90);
+  delay(5000);
+  xservo.write(135);
+  delay(5000);
+  xservo.write(90);
 
 }
 
+
+void calibrateYangle()
+{
+  delay(5000);
+  yservo.write(85);
+  delay(5000);
+  yservo.write(90);
+  delay(5000);
+  yservo.write(95);
+  delay(5000); 
+  yservo.write(90);
+}
 
 void serialEvent()
 {
@@ -127,20 +188,19 @@ void serialEvent()
     if (data == '#')
     {
 
-      rawx_angle =  parseXinfo(angle_info); 
-      rawy_angle = parseYinfo(angle_info); 
-
-      if (!((rawx_angle-x_angle)>-5 && (rawx_angle-x_angle) < 5)){
-        x_angle = rawx_angle; 
-      }
-      if(!((rawy_angle-x_angle)>-5 && (rawy_angle-x_angle) < 5)){
-        y_angle = rawy_angle; 
-      }
-      angle_info = ""; 
+      x_angle =  parseXinfo(angle_info);
+      y_angle = parseYinfo(angle_info);
+      triggerInfo = parseZinfo(angle_info);
+      data_received = true; 
+      angle_info = "";
+    }else
+    {
+      data_received = false; 
     }
-
     
+
   }
+
 }
 
 float parseXinfo(String data)
@@ -154,30 +214,31 @@ float parseXinfo(String data)
 
 float parseYinfo(String data)
 {
-  data.remove(data.indexOf("X"),data.indexOf("Y")+1);
+  data.remove(data.indexOf("X"), data.indexOf("Y") + 1);
   data.remove(data.indexOf("Z"));
   return data.toFloat();
 }
 
 int parseZinfo(String data)
 {
-  data.remove(data.indexOf("X"),data.indexOf("Z")+1);
-  data.remove(data.indexOf("#")); 
+  // 1 to shoot 0 to not shoot
+  data.remove(data.indexOf("X"), data.indexOf("Z") + 1);
+  data.remove(data.indexOf("#"));
   return data.toInt();
 }
 
 void trigger()
 {
-  for (int i = 0; i < 5; i++)
+  for (int i = 0; i < 3; i++)
   {
-    trigger.write(90)
-    delay(10)
-    trigger.write(0) 
-    delay(10)
+    triggerServo.write(90);
+    delay(300);
+    triggerServo.write(20);
+    delay(300);
   }
 }
 
 
-//initial calibration of watergun -> lean back the watergun 
-//if trigger = true -> shooot 
-//if face stay in place for 5 sec (with tolerace) shoot 
+//initial calibration of watergun -> lean back the watergun
+//if trigger = true -> shooot
+//if face stay in place for 5 sec (with tolerace) shoot
