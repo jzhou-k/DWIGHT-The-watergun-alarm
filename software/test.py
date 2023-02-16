@@ -119,15 +119,10 @@ app.exec_()
 # t1.start()
 # t1.join()
 
+
 #print("GOOD FUCKING MORNING")
 #Python -> Arduino -> Python again 
 
-#Pull trigger should be in arduino code to avoid 1 s delay
-def pullTrigger(): 
-    for i in range(3): 
-        data = "X{}Y{}#".format(90,0)
-        writeData(data) 
-        data = "X{}Y{}#".format(160,0)
-        writeData(data) 
+
 
 

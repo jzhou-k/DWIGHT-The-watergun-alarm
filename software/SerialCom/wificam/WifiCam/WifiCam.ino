@@ -118,7 +118,7 @@ void loop()
     yservo.write(y_angle);
   }
   
-    
+  //calibrateEvery();
   //if (triggerInfo) {
     //trigger();
   //}
@@ -127,12 +127,25 @@ void loop()
 }
 //***********************************************************
 
+void tryingTrigger()
+{
+  yservo.write(20);
+  delay(2000);
+  yservo.write(90);
+  delay(2000); 
+
+ //45 
+  triggerServo.write(50);
+  delay(1500);
+  triggerServo.write(18);
+  delay(1000);
+}
 
 void calibrateEvery()
 {
   calibrateYangle();
   delay(1000);
-  trigger(); 
+  calibrateZangle();
   delay(1000); 
   calibrateXangle();
 }

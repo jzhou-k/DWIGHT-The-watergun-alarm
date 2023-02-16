@@ -1,5 +1,4 @@
 
-
 import math
 import cv2
 import urllib.request 
@@ -15,7 +14,8 @@ import threading
 
 
 esp32 = serial.Serial('COM6',115200,timeout=.1)
-f_cas= cv2.CascadeClassifier(cv2.data.haarcascades+'haarcascade_frontalface_default.xml')
+#haarcascade_frontalface_default.xml
+f_cas= cv2.CascadeClassifier(cv2.data.haarcascades+'haarcascade_frontalface_alt.xml')
 eye_cascade=cv2.CascadeClassifier(cv2.data.haarcascades +'haarcascade_eye.xml')
 url='http://192.168.2.41/800x600.jpg'
 ##'''cam.bmp / cam-lo.jpg /cam-hi.jpg / cam.mjpeg '''
@@ -48,19 +48,18 @@ def writeData(data):
 print("Hello world")
 
 time.sleep(5)
-data = "X{}Y{}Z{}#".format(90, 90, 0) 
+data = "X{}Y{}Z{}#".format(93, 90, 0) 
 writeData(data)
-time.sleep(10)
+time.sleep(5)
 
 while True:
-
-   
 
     #'http://192.168.2.41/800x600.jpg' 
     req = urllib.request.urlopen('http://192.168.2.41/800x600.jpg')
     arr = np.asarray(bytearray(req.read()), dtype=np.uint8)
     img = cv2.imdecode(arr, -1) # 'Load it as it is'
-    img = cv2.flip(img,0); #verticle flip 
+    #img = cv2.flip(img,0); #verticle flip 
+    img = cv2.rotate(img,rotateCode=1)
     
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -69,11 +68,11 @@ while True:
     beta = 18
    
    
-    gray = cv2.addWeighted(gray, alpha, np.zeros(gray.shape, gray.dtype),beta,20)
+    #gray = cv2.addWeighted(gray, alpha, np.zeros(gray.shape, gray.dtype),beta,20)
 
     
     #1.1, 5 
-    face=f_cas.detectMultiScale(gray,scaleFactor=1.2,minNeighbors=5, minSize=(40,40))
+    face=f_cas.detectMultiScale(gray,scaleFactor=1.1,minNeighbors=5, minSize=(50,50))
     for x,y,w,h in face:
         cv2.rectangle(gray,(x,y),(x+w,y+h),(0,255,255),3)
         #this is for eye detection within facial detection -> might be useful for mouth
@@ -95,40 +94,8 @@ while True:
         #     cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
     
 
-    # if(i < 100 and not switch): 
-    #       i = i + 0.0001  
-    # elif (i > 100 and not switch): 
-    #     i = i - 0.0001
-
-    # data = "X{}Y{}Z{}#".format(i,120, 0)
-    # print(i)
-    # i = i + 0.1
-    # writeData(data)
-
     cv2.imshow('Video', gray)
-   
-    # x_angle  = 90 - math.atan((x_point - 15)/distance)
-    # y_angle = 90 - math.atan((y_point - 15)/distance)
-    # data = "X{}Y{}#".format(x_angle, y_angle) 
-    # writeData(data)
-    # print(data)
-
-
-    # img_resp=urllib.request.urlopen(url)
-    # imgnp=np.array(bytearray(img_resp.read()),dtype=np.uint8)
-    # img=cv2.imdecode(imgnp,-1)
-    # gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    # face=f_cas.detectMultiScale(gray,scaleFactor=1.1,minNeighbors=5)
-    # for x,y,w,h in face:
-    #     cv2.rectangle(img,(x,y),(x+w,y+h),(0,0,255),3)
-    #     roi_gray = gray[y:y+h, x:x+w]
-    #     roi_color = img[y:y+h, x:x+w]
-    #     eyes = eye_cascade.detectMultiScale(roi_gray)
-    #     for (ex,ey,ew,eh) in eyes:
-    #         cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
- 
- 
-    #cv2.imshow("live transmission",img)
+    writeData(data)
     key=cv2.waitKey(5)
     if key==ord('q'):
         break
