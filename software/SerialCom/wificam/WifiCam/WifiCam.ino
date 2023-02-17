@@ -141,6 +141,19 @@ void tryingTrigger()
   delay(1000);
 }
 
+void initalizeGun() 
+{
+
+  delay(1000);
+  for(int i = 90; i<0; i = i + 10)
+  {
+   yservo.write(i);
+    delay(10);  
+  }
+    
+
+}
+
 void calibrateEvery()
 {
   calibrateYangle();
@@ -242,14 +255,24 @@ int parseZinfo(String data)
 
 void trigger()
 {
-  for (int i = 0; i < 3; i++)
-  {
-    triggerServo.write(90);
-    delay(300);
-    triggerServo.write(20);
-    delay(300);
-  }
+
+  //manual control mode 
+  delay(100);
+  triggerServo.write(45);
+  delay(200);
+  triggerServo.write(20);
+  delay(500);
+
+  //For alarm mode 
+  // for (int i = 0; i < 3; i++)
+  // {
+  //   triggerServo.write(90);
+  //   delay(300);
+  //   triggerServo.write(20);
+  //   delay(300);
+  // }
 }
+
 
 
 //initial calibration of watergun -> lean back the watergun
