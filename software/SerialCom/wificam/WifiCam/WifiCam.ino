@@ -7,6 +7,7 @@ float y_angle = 90;
 float rawx_angle = 90;
 float rawy_angle = 90;
 int triggerInfo = 0;
+int sweepInfo = 0;
 String angle_info = "";
 
 
@@ -18,14 +19,17 @@ static const int xServoPin = 33;
 static const int triggerServoPin = 12; //to be determined
 
 boolean data_received = false ;
-
+boolean start_sweep = false;
 
 void calibrateXangle();
 void calibrateYangle();
 float parseXinfo(String data);
 float parseYinfo(String data);
+int parseSinfo(String data);
 void serialEvent();
 void trigger();
+void initalizeGun();
+void sweep(int y, int xStart, int xEnd);
 
 
 static const char* WIFI_SSID = "BELL011";
@@ -46,7 +50,7 @@ void setup()
     yServoPin,
     Servo::CHANNEL_NOT_ATTACHED,
     50,
-    250 
+    250
   );
   xservo.attach(
     xServoPin,
@@ -59,14 +63,14 @@ void setup()
   triggerServo.attach(
     triggerServoPin,
     Servo::CHANNEL_NOT_ATTACHED,
-    //100, 200 no go 
-    //15, 100 kinda?? 
+    //100, 200 no go
+    //15, 100 kinda??
     15,
     200
   );
 
   // triggerServo.write(0);
-
+  initalizeGun();
 
 
   WiFi.persistent(false);
@@ -110,47 +114,50 @@ void loop()
 {
   server.handleClient();
 
-  
+
   serialEvent();
-  if(data_received)
+  if (data_received)
   {
-    xservo.write(x_angle);
-    yservo.write(y_angle);
+
+    if (sweepInfo == 1 && !start_sweep)
+    {
+      sweep(87, 105, 115);
+      start_sweep = true; 
+    }
+    else
+    {
+      sweepInfo = 0;
+      start_sweep = false;
+      xservo.write(x_angle);
+      yservo.write(y_angle);
+
+      if (triggerInfo == 1)
+      {
+        trigger();
+      }
+
+    }
+
+
   }
-  
+  triggerInfo = 0;
   //calibrateEvery();
-  //if (triggerInfo) {
-    //trigger();
-  //}
+
   delay(1);
 
 }
 //***********************************************************
 
-void tryingTrigger()
-{
-  yservo.write(20);
-  delay(2000);
-  yservo.write(90);
-  delay(2000); 
-
- //45 
-  triggerServo.write(50);
-  delay(1500);
-  triggerServo.write(18);
-  delay(1000);
-}
-
-void initalizeGun() 
+void initalizeGun()
 {
 
   delay(1000);
-  for(int i = 90; i<0; i = i + 10)
+  for (int i = 90; i > 10; i -= 10)
   {
-   yservo.write(i);
-    delay(10);  
+    yservo.write(i);
+    delay(10);
   }
-    
+
 
 }
 
@@ -159,7 +166,7 @@ void calibrateEvery()
   calibrateYangle();
   delay(1000);
   calibrateZangle();
-  delay(1000); 
+  delay(1000);
   calibrateXangle();
 }
 
@@ -195,7 +202,7 @@ void calibrateYangle()
   yservo.write(90);
   delay(5000);
   yservo.write(95);
-  delay(5000); 
+  delay(5000);
   yservo.write(90);
 }
 
@@ -217,13 +224,14 @@ void serialEvent()
       x_angle =  parseXinfo(angle_info);
       y_angle = parseYinfo(angle_info);
       triggerInfo = parseZinfo(angle_info);
-      data_received = true; 
+      sweepInfo = parseSinfo(angle_info);
+      data_received = true;
       angle_info = "";
-    }else
+    } else
     {
-      data_received = false; 
+      data_received = false;
     }
-    
+
 
   }
 
@@ -249,6 +257,14 @@ int parseZinfo(String data)
 {
   // 1 to shoot 0 to not shoot
   data.remove(data.indexOf("X"), data.indexOf("Z") + 1);
+  data.remove(data.indexOf("S"));
+  return data.toInt();
+}
+
+int parseSinfo(String data)
+{
+  // 1 to shoot 0 to not shoot
+  data.remove(data.indexOf("X"), data.indexOf("S") + 1);
   data.remove(data.indexOf("#"));
   return data.toInt();
 }
@@ -256,14 +272,14 @@ int parseZinfo(String data)
 void trigger()
 {
 
-  //manual control mode 
+  //manual control mode
   delay(100);
-  triggerServo.write(45);
+  triggerServo.write(55);
   delay(200);
   triggerServo.write(20);
-  delay(500);
+  delay(100);
 
-  //For alarm mode 
+  //For alarm mode
   // for (int i = 0; i < 3; i++)
   // {
   //   triggerServo.write(90);
@@ -273,6 +289,22 @@ void trigger()
   // }
 }
 
+//pass in angle
+void sweep(int y, int xStart, int xEnd)
+{
+  int iter = int((xEnd - xStart) / 5);
+  yservo.write(y);
+  for (int i = xStart; i < xEnd; i += iter)
+  {
+    xservo.write(i);
+    delay(1500);
+    trigger();
+    delay(300);
+  }
+
+  delay(1000);
+  xservo.write(90);
+}
 
 
 //initial calibration of watergun -> lean back the watergun

@@ -12,6 +12,7 @@ import datetime
 import time
 import threading
 import argparse
+import os 
 
 import numpy as np
 import cv2 as cv
@@ -22,14 +23,90 @@ from PyQt5.QtWidgets import QDesktopWidget
 
 from yunet import YuNet
 
-esp32 = serial.Serial('COM6',115200,timeout=.1)
+
+
+
+#Alarm setting better way of setting alarm bruh 
+def alarmFunction():
+    
+    def countTime(stop_event): 
+        #start = datetime.datetime.now()
+        while not stop_event.is_set():
+            #timeElapsed = datetime.datetime.now() - start
+            print(datetime.datetime.now().strftime("%H:%M:%S"))
+            stop_event.wait(1)
+
+    # Get the current time
+    now = datetime.datetime.now()
+    stop_event = threading.Event()
+
+
+    #TO actually enter the alarm time e.g 7:30 
+    #This is the most dumb solution : ^) 
+    #Parse string to hour min then pass into time delta, the day will be incremented automatically 
+    # 'Wed Jun  9 04:26:40 1993'. standard format 
+    alarmH = 20
+    alarmM = 5
+    nowH = (int)(now.strftime("%H"))
+    nowM = (int)(now.strftime("%M"))
+
+    diffH = alarmH - nowH 
+    diffM = alarmM - nowM 
+    print(diffM)
+    print(diffH)
+    elapseH  = diffH 
+    elapseM = diffM 
+    
+    if(diffH < 0 or (diffH == 0 and diffM < 0)): 
+        elapseH = 23 + diffH 
+        elapseM = 60 + diffM
+        print("{}:{}".format(elapseH,elapseM))
+    elif (diffM < 0): 
+        elapseH = diffH - 1
+        elapseM = 60 + diffM
+        print("{}:{}".format(elapseH,elapseM))
+    elif(diffH == 0 and diffM > 0):
+        elapseH = diffH 
+        elapseM = diffM 
+        print("{}:{}".format(elapseH,elapseM))
+    
+
+    
+
+    # Calculate the alarm time (10 minutes from now)
+    alarm_time = now + datetime.timedelta(hours=elapseH, minutes=elapseM)
+
+    #Start displayin time elapsed thread 
+    t2 = threading.Thread(target=countTime, args=(stop_event, ))
+    t2.start()
+
+    # Sleep until the alarm time
+    time.sleep((alarm_time - now).total_seconds())
+
+    # Alarm goes off
+    print("Wake up!")
+    stop_event.set()
+
+# ***** START ALARM FUNCTION ***** 
+t1 = threading.Thread(target=alarmFunction)
+t1.start()
+t1.join()
+
+
+
+
+
+esp32 = serial.Serial('COM7',115200,timeout=.1)
 def writeData(data):
     esp32.write(data.encode())
     print(data)
 
 
 dim = (400, 300)
+#Huge accuracy issues 
 # In cm
+# idx 1 negative to the left 
+# idx 2 negative down 
 # hindsight this will work better as a object right... fuck 
 # Configure so the gun defaults to aim at the center of the camera footage
 # Turret will be the reference position, 
@@ -38,7 +115,7 @@ dim = (400, 300)
 # idx = 3 - 4aspect ratio of camera footage x,y, 
 # idx = 5-6 actual aim coord default is centered, this will change
 # pixel scale factor
-positionInfo = [8,8,75,400,300,200,150,0.2] #1px = 1cm 
+positionInfo = [-25,-30,75,400,300,200,150,0.2] #1px = 1cm need to test this out with a ruler or something(a sheet of paper with notchings)
 
 class MyWidget(QWidget):
     def __init__(self):
@@ -50,17 +127,15 @@ class MyWidget(QWidget):
         self.handle_mouse_click(event.x(), event.y())
 
     def handle_mouse_click(self, x, y):
-        positionInfo[5] = x
-        positionInfo[6] = y 
-        xangle,yangle = getAngle(positionInfo)
-        t = 0
-        data = "X{}Y{}T{}#".format(xangle,yangle,t)
-        writeData(data)
+        mouseAction(x,y)
+        
         # print(data)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Q:
             self.close()
+        if event.key() == Qt.Key_Return:
+            print("SHOOT")
     
     def center(self):
         # Get the dimensions of the screen
@@ -77,10 +152,29 @@ class MyWidget(QWidget):
 def getAngle(positionInfo):
     #Todo: You need to change the how it calculates the center >:c 
     scaleFactor = positionInfo[7]
-    xangle = 90 + math.degrees(math.atan((positionInfo[5]*scaleFactor+positionInfo[0]-200*scaleFactor)/positionInfo[2]))
-    yangle = 90 + math.degrees(math.atan((positionInfo[6]*scaleFactor+positionInfo[1]-150*scaleFactor)/positionInfo[2]))
+    #This is wrong, xangle is using 300/2 150 as center 
+    xangle = 90 - math.degrees(math.atan((positionInfo[5]*scaleFactor+positionInfo[0]-150*scaleFactor)/positionInfo[2]))
+    yangle = 90 + math.degrees(math.atan((positionInfo[6]*scaleFactor+positionInfo[1]-200*scaleFactor)/positionInfo[2]))
     return xangle, yangle
 
+
+        
+
+
+def moveNshoot(x,y,t,s = 0): 
+
+    #Transpose because camera is oriented differently
+    temp = x 
+    x = y 
+    y = temp 
+    #x = 300 - x 
+    #y = 400 - y 
+    positionInfo[5] = x
+    positionInfo[6] = y 
+    xangle,yangle = getAngle(positionInfo)
+    data = "X{}Y{}Z{}S{}#".format(xangle,yangle,t,s)
+    writeData(data)
+    print(x,y)
 
 def str2bool(v):
     if v.lower() in ['on', 'yes', 'true', 'y', 't']:
@@ -120,7 +214,7 @@ parser.add_argument('--nms_threshold', type=float, default=0.3,
                     help='Usage: Suppress bounding boxes of iou >= nms_threshold. Default = 0.3.')
 parser.add_argument('--top_k', type=int, default=5000,
                     help='Usage: Keep top_k bounding boxes before NMS.')
-parser.add_argument('--save', '-s', type=str, default=False,
+parser.add_argument('--save', '-s', type=str, default=True,
                     help='Usage: Set “True” to save file with results (i.e. bounding box, confidence level). Invalid in case of camera input. Default will be set to “False”.')
 parser.add_argument('--vis', '-v', type=str2bool, default=True,
                     help='Usage: Default will be set to “True” and will open a new window to show results. Set to “False” to stop visualizations from being shown. Invalid in case of camera input.')
@@ -166,56 +260,99 @@ def visualize(image, results, box_color=(0, 255, 0), text_color=(0, 0, 255), fps
         for idx, landmark in enumerate(landmarks):
             cv.circle(output, landmark, 2, landmark_color[idx], 2)
 
-    return output
+    return output, coord 
 
 
 def cameraMode():
+    def mouseAction(action,x,y, *args): 
+        if (action == cv.EVENT_RBUTTONDBLCLK or action == cv.EVENT_LBUTTONDBLCLK):
+            moveNshoot(x,y,1)
+
+        if(action==cv.EVENT_MOUSEMOVE): 
+            #Not working because the new frames are over writing this text so, refer to visualize function
+            cv.putText(image, 'Coord: {:.2f} , {:.2f}'.format(
+            x, y), (x, y), cv.FONT_HERSHEY_DUPLEX, 0.3, (0,255,255))  
+        
+        
+    path = 'results/'
+
+
+    cv.namedWindow("Video", cv.WINDOW_NORMAL)
+    cv.setMouseCallback("Video", mouseAction)
+    detected = 0; 
+    now = datetime.datetime.now()  
+    startTime = time.time() 
+    waitTime = 15 #waits for 120 seconds, if no face, start 扫射 for 10 times (5 times from and back)
+    elapsedTime = 0 
+    sweep = True 
+    #Y value from 240 - 260 just say 250 then 
+    #X value from 100 - 140 (more variations)
+    # X1 angle X2 angle Y angle iteration is just difference / 10 
     while True:
-        print(args.controlMode)
+        #print(args.controlMode)
+        record = False 
+        
         req = urllib.request.urlopen(
-            'http://t2.gstatic.com/licensed-image?q=tbn:ANd9GcQ2wPmYNixF92zIj_LsxSjjJQ7vO3CdccFkVEdKIvofULXBOwzb-Ef1bYv11mkcW5SJ')
+            'http://192.168.2.41/800x600.jpg')
         arr = np.asarray(bytearray(req.read()), dtype=np.uint8)
         img = cv.imdecode(arr, -1)  # 'Load it as it is'
 
         # Determine the where to crop
         height, width, channels = img.shape
-        x, y, w, h = 0, 0, width, int(height/2)  # example values
-        # fx = 0.5. fy = 0.5 resizes by half
+        x, y, w, h = 0, 0, width//2, height//2  # example value
 
-        crop_img = img[y:1024, x:x+w]
         # The model only detect max face size of 300 x 300
-        crop_img = cv.resize(crop_img, (400, 300),
+        crop_img = cv.resize(img, (400, 300),
                              interpolation=cv.INTER_LINEAR)
         image = cv.cvtColor(crop_img, cv.COLOR_RGB2BGR)
+        image = cv.flip(image,0); #verticle flip to detect face upright 
         h, w, _ = image.shape
+        
+        now = time.time()   
+        elapsedTime =  now - startTime
+        print(elapsedTime)
+        # if less than waitTime, then keep checking for face, else sweep once, then back to detect face  
+        if(elapsedTime < waitTime or not sweep): 
+            # Inference
+            model.setInputSize([w, h])
+            results = model.infer(image)
+            #results != none doesnt work because results is a array hmm
+            if(results is not None):
+                print('{} faces detected.'.format(results.shape[0]))
+                detected = detected + 1 
+                
+                record = True 
+                for idx, det in enumerate(results):
+                    print('{}: {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f}'.format(
+                        idx, *det[:-1])
+                    )
 
-        # Inference
-        model.setInputSize([w, h])
-        results = model.infer(image)
+                # Draw results on the input image
+                image, coord = visualize(image, results)
+                #This will shoot everytime a face detected, might be a bad idea to code this....
+                moveNshoot(coord[0], coord[1], 1)
+        else:
+            sweep = False 
+            record = True 
+            s = 1 
+            moveNshoot(0,0,0,s)
 
-        # Print results
-        print('{} faces detected.'.format(results.shape[0]))
-        for idx, det in enumerate(results):
-            print('{}: {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f}'.format(
-                idx, *det[:-1])
-            )
+            
+            
 
-        # Draw results on the input image
-        image = visualize(image, results)
-
-        # Save results if save is true
-        if args.save:
-            print('Results saved to result.jpg\n')
-            cv.imwrite('result.jpg', image)
+        # Save results if save is true and record condition is met 
+        if (args.save and record):
+            print('Results saved to result{}.jpg\n'.format(detected))
+            #lmao right its a file path 
+            cv.imwrite(os.path.join(path, 'result{}.jpg'.format(detected)), image)
 
         # Visualize results in a new window
         if args.vis:
-            cv.namedWindow("Video", cv.WINDOW_NORMAL)
             cv.imshow("Video", image)
-            key = cv.waitKey(1)  # delays for some seconds
+            key = cv.waitKey(5)  # delays for some seconds 0 delays for infinite times 
             if key == ord('q'):
                 break
-
+    
 
 def manualModeMouse():
     app = QApplication([])
@@ -238,7 +375,7 @@ if __name__ == '__main__':
                   backendId=args.backend,
                   targetId=args.target)
 
-    #cameraMode()
-    manualModeMouse()
+    cameraMode()
+    #manualModeMouse()
 
 cv.destroyAllWindows()
