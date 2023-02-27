@@ -37,6 +37,56 @@ from yunet import YuNet
 
 from playsound import playsound
 
+def str2bool(v):
+    if v.lower() in ['on', 'yes', 'true', 'y', 't']:
+        return True
+    elif v.lower() in ['off', 'no', 'false', 'n', 'f']:
+        return False
+    else:
+        raise NotImplementedError
+
+
+backends = [cv.dnn.DNN_BACKEND_OPENCV, cv.dnn.DNN_BACKEND_CUDA]
+targets = [cv.dnn.DNN_TARGET_CPU,
+           cv.dnn.DNN_TARGET_CUDA, cv.dnn.DNN_TARGET_CUDA_FP16]
+help_msg_backends = "Choose one of the computation backends: {:d}: OpenCV implementation (default); {:d}: CUDA"
+help_msg_targets = "Choose one of the target computation devices: {:d}: CPU (default); {:d}: CUDA; {:d}: CUDA fp16"
+try:
+    backends += [cv.dnn.DNN_BACKEND_TIMVX]
+    targets += [cv.dnn.DNN_TARGET_NPU]
+    help_msg_backends += "; {:d}: TIMVX"
+    help_msg_targets += "; {:d}: NPU"
+except:
+    print('This version of OpenCV does not support TIM-VX and NPU. Visit https://github.com/opencv/opencv/wiki/TIM-VX-Backend-For-Running-OpenCV-On-NPU for more information.')
+
+
+parser = argparse.ArgumentParser(
+    description='YuNet: A Fast and Accurate CNN-based Face Detector (https://github.com/ShiqiYu/libfacedetection).')
+parser.add_argument('--input', '-i', type=str,
+                    help='Usage: Set input to a certain image, omit if using camera.')
+parser.add_argument('--model', '-m', type=str, default='face_detection_yunet_2022mar.onnx',
+                    help="Usage: Set model type, defaults to 'face_detection_yunet_2022mar.onnx'.")
+parser.add_argument('--backend', '-b', type=int,
+                    default=backends[0], help=help_msg_backends.format(*backends))
+parser.add_argument('--target', '-t', type=int,
+                    default=targets[0], help=help_msg_targets.format(*targets))
+parser.add_argument('--conf_threshold', type=float, default=0.9,
+                    help='Usage: Set the minimum needed confidence for the model to identify a face, defauts to 0.9. Smaller values may result in faster detection, but will limit accuracy. Filter out faces of confidence < conf_threshold.')
+parser.add_argument('--nms_threshold', type=float, default=0.3,
+                    help='Usage: Suppress bounding boxes of iou >= nms_threshold. Default = 0.3.')
+parser.add_argument('--top_k', type=int, default=5000,
+                    help='Usage: Keep top_k bounding boxes before NMS.')
+parser.add_argument('--save', '-s', type=str, default=True,
+                    help='Usage: Set “True” to save file with results (i.e. bounding box, confidence level). Invalid in case of camera input. Default will be set to “False”.')
+parser.add_argument('--vis', '-v', type=str2bool, default=True,
+                    help='Usage: Default will be set to “True” and will open a new window to show results. Set to “False” to stop visualizations from being shown. Invalid in case of camera input.')
+# Used to control turret movment WIll be adding a joystick mode soon
+parser.add_argument('--controlMode', type=str, default="alarm",
+                    help='Usage: manual: Control coord with mouse click, alarm: alarmMode with face detection')
+parser.add_argument('--alarmTime', type=str, default = "8:30",
+                    help='Usage: will allow for user input for alarm time')
+args = parser.parse_args()
+
 
 #Alarm setting better way of setting alarm bruh 
 def alarmFunction(h,m):
@@ -100,9 +150,12 @@ def alarmFunction(h,m):
     stop_event.set()
 
 # ***** START ALARM FUNCTION ***** 
-t1 = threading.Thread(target=alarmFunction, args=(8,30))
-t1.start()
-t1.join()
+
+if(args.controlMode == "alarm"):
+    alarmH, alarmM = args.alarmTime.split(":")
+    t1 = threading.Thread(target=alarmFunction, args=(alarmH, alarmM))
+    t1.start()
+    t1.join()
 
 
 esp32 = serial.Serial('COM7',115200,timeout=.1)
@@ -182,56 +235,6 @@ def moveNshoot(x,y,t,s = 0):
     data = "X{}Y{}Z{}S{}#".format(xangle,yangle,t,s)
     writeData(data)
     print(x,y)
-
-def str2bool(v):
-    if v.lower() in ['on', 'yes', 'true', 'y', 't']:
-        return True
-    elif v.lower() in ['off', 'no', 'false', 'n', 'f']:
-        return False
-    else:
-        raise NotImplementedError
-
-
-backends = [cv.dnn.DNN_BACKEND_OPENCV, cv.dnn.DNN_BACKEND_CUDA]
-targets = [cv.dnn.DNN_TARGET_CPU,
-           cv.dnn.DNN_TARGET_CUDA, cv.dnn.DNN_TARGET_CUDA_FP16]
-help_msg_backends = "Choose one of the computation backends: {:d}: OpenCV implementation (default); {:d}: CUDA"
-help_msg_targets = "Choose one of the target computation devices: {:d}: CPU (default); {:d}: CUDA; {:d}: CUDA fp16"
-try:
-    backends += [cv.dnn.DNN_BACKEND_TIMVX]
-    targets += [cv.dnn.DNN_TARGET_NPU]
-    help_msg_backends += "; {:d}: TIMVX"
-    help_msg_targets += "; {:d}: NPU"
-except:
-    print('This version of OpenCV does not support TIM-VX and NPU. Visit https://github.com/opencv/opencv/wiki/TIM-VX-Backend-For-Running-OpenCV-On-NPU for more information.')
-
-parser = argparse.ArgumentParser(
-    description='YuNet: A Fast and Accurate CNN-based Face Detector (https://github.com/ShiqiYu/libfacedetection).')
-parser.add_argument('--input', '-i', type=str,
-                    help='Usage: Set input to a certain image, omit if using camera.')
-parser.add_argument('--model', '-m', type=str, default='face_detection_yunet_2022mar.onnx',
-                    help="Usage: Set model type, defaults to 'face_detection_yunet_2022mar.onnx'.")
-parser.add_argument('--backend', '-b', type=int,
-                    default=backends[0], help=help_msg_backends.format(*backends))
-parser.add_argument('--target', '-t', type=int,
-                    default=targets[0], help=help_msg_targets.format(*targets))
-parser.add_argument('--conf_threshold', type=float, default=0.9,
-                    help='Usage: Set the minimum needed confidence for the model to identify a face, defauts to 0.9. Smaller values may result in faster detection, but will limit accuracy. Filter out faces of confidence < conf_threshold.')
-parser.add_argument('--nms_threshold', type=float, default=0.3,
-                    help='Usage: Suppress bounding boxes of iou >= nms_threshold. Default = 0.3.')
-parser.add_argument('--top_k', type=int, default=5000,
-                    help='Usage: Keep top_k bounding boxes before NMS.')
-parser.add_argument('--save', '-s', type=str, default=True,
-                    help='Usage: Set “True” to save file with results (i.e. bounding box, confidence level). Invalid in case of camera input. Default will be set to “False”.')
-parser.add_argument('--vis', '-v', type=str2bool, default=True,
-                    help='Usage: Default will be set to “True” and will open a new window to show results. Set to “False” to stop visualizations from being shown. Invalid in case of camera input.')
-# Used to control turret movment
-parser.add_argument('--controlMode', type=str, default="manual",
-                    help='Usage: Control coord with mouse click')
-parser.add_argument('--isAlarm', type=str2bool,default=False,
-                    help='Usage: will allow for user input for alarm time')
-args = parser.parse_args()
-
 
 def visualize(image, results, box_color=(0, 255, 0), text_color=(0, 0, 255), fps=None):
     output = image.copy()
