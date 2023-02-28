@@ -14,6 +14,7 @@ import threading
 import argparse
 import os 
 
+
 import numpy as np
 import cv2 as cv
 
@@ -21,8 +22,116 @@ from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5.QtCore import Qt 
 from PyQt5.QtWidgets import QDesktopWidget
 
+import pygame
+
 from yunet import YuNet
 
+# Initialize pygame
+pygame.init()
+
+# Set up the joystick
+#joystick = pygame.joystick.Joystick(0)
+#joystick.init()
+
+def str2bool(v):
+    if v.lower() in ['on', 'yes', 'true', 'y', 't']:
+        return True
+    elif v.lower() in ['off', 'no', 'false', 'n', 'f']:
+        return False
+    else:
+        raise NotImplementedError
+
+
+backends = [cv.dnn.DNN_BACKEND_OPENCV, cv.dnn.DNN_BACKEND_CUDA]
+targets = [cv.dnn.DNN_TARGET_CPU,
+           cv.dnn.DNN_TARGET_CUDA, cv.dnn.DNN_TARGET_CUDA_FP16]
+help_msg_backends = "Choose one of the computation backends: {:d}: OpenCV implementation (default); {:d}: CUDA"
+help_msg_targets = "Choose one of the target computation devices: {:d}: CPU (default); {:d}: CUDA; {:d}: CUDA fp16"
+try:
+    backends += [cv.dnn.DNN_BACKEND_TIMVX]
+    targets += [cv.dnn.DNN_TARGET_NPU]
+    help_msg_backends += "; {:d}: TIMVX"
+    help_msg_targets += "; {:d}: NPU"
+except:
+    print('This version of OpenCV does not support TIM-VX and NPU. Visit https://github.com/opencv/opencv/wiki/TIM-VX-Backend-For-Running-OpenCV-On-NPU for more information.')
+
+
+
+def visualize(image, results, box_color=(0, 255, 0), text_color=(0, 0, 255), fps=None):
+    output = image.copy()
+    output = cv.cvtColor(output, cv.COLOR_BGR2RGB)
+    landmark_color = [
+        (255,   0,   0),  # right eye
+        (0,   0, 255),  # left eye
+        (0, 255,   0),  # nose tip
+        (255,   0, 255),  # right mouth corner
+        (0, 255, 255)  # left mouth corner
+    ]
+
+    if fps is not None:
+        cv.putText(output, 'FPS: {:.2f}'.format(
+            fps), (0, 15), cv.FONT_HERSHEY_SIMPLEX, 0.5, text_color)
+
+    for det in (results if results is not None else []):
+        bbox = det[0:4].astype(np.int32)
+        cv.rectangle(output, (bbox[0], bbox[1]),
+                     (bbox[0]+bbox[2], bbox[1]+bbox[3]), box_color, 2)
+        
+        #Prints the confidence 
+        conf = det[-1]
+        cv.putText(output, '{:.2f}'.format(
+            conf), (bbox[0], bbox[1]+12), cv.FONT_HERSHEY_DUPLEX, 0.5, text_color)
+
+        #Prints the center coord 
+        centerx = bbox[2] / 2 + bbox[0]
+        centery = bbox[3] / 2 + bbox[1]
+        coord = (int(centerx), int(centery))
+        cv.putText(output, 'Coord: {:.2f} , {:.2f}'.format(
+            centerx, centery), (bbox[0], bbox[1]-12), cv.FONT_HERSHEY_DUPLEX, 0.4, box_color)
+        cv.circle(output, coord, 1, box_color, 2)
+
+
+        landmarks = det[4:14].astype(np.int32).reshape((5, 2))
+        for idx, landmark in enumerate(landmarks):
+            cv.circle(output, landmark, 2, landmark_color[idx], 2)
+
+    return output, coord 
+
+
+
+parser = argparse.ArgumentParser(
+    description='YuNet: A Fast and Accurate CNN-based Face Detector (https://github.com/ShiqiYu/libfacedetection).')
+parser.add_argument('--input', '-i', type=str,
+                    help='Usage: Set input to a certain image, omit if using camera.')
+parser.add_argument('--model', '-m', type=str, default='face_detection_yunet_2022mar.onnx',
+                    help="Usage: Set model type, defaults to 'face_detection_yunet_2022mar.onnx'.")
+parser.add_argument('--backend', '-b', type=int,
+                    default=backends[0], help=help_msg_backends.format(*backends))
+parser.add_argument('--target', '-t', type=int,
+                    default=targets[0], help=help_msg_targets.format(*targets))
+parser.add_argument('--conf_threshold', type=float, default=0.9,
+                    help='Usage: Set the minimum needed confidence for the model to identify a face, defauts to 0.9. Smaller values may result in faster detection, but will limit accuracy. Filter out faces of confidence < conf_threshold.')
+parser.add_argument('--nms_threshold', type=float, default=0.3,
+                    help='Usage: Suppress bounding boxes of iou >= nms_threshold. Default = 0.3.')
+parser.add_argument('--top_k', type=int, default=5000,
+                    help='Usage: Keep top_k bounding boxes before NMS.')
+parser.add_argument('--save', '-s', type=str, default=True,
+                    help='Usage: Set “True” to save file with results (i.e. bounding box, confidence level). Invalid in case of camera input. Default will be set to “False”.')
+parser.add_argument('--vis', '-v', type=str2bool, default=True,
+                    help='Usage: Default will be set to “True” and will open a new window to show results. Set to “False” to stop visualizations from being shown. Invalid in case of camera input.')
+# Used to control turret movment
+parser.add_argument('--controlMode', type=str, default="noAlarm",
+                    help='Usage: manual: Control coord with mouse click, alarm: alarmMode with face detection')
+parser.add_argument('--alarmTime', type=str, default = "8:30",
+                    help='Usage: will allow for user input for alarm time')
+args = parser.parse_args()
+
+
+
+esp32 = serial.Serial('COM7',115200,timeout=.1)
+def writeData(data):
+    esp32.write(data.encode())
+    print(data)
 
 
 
@@ -30,10 +139,19 @@ from yunet import YuNet
 def alarmFunction():
     
     def countTime(stop_event): 
+        #waits for 5 sec for oled to set up 
+        time.sleep(5);
+        writeData("{}:{}:0#".format(h,m))
+        time.sleep(10) 
+
         #start = datetime.datetime.now()
         while not stop_event.is_set():
             #timeElapsed = datetime.datetime.now() - start
-            print(datetime.datetime.now().strftime("%H:%M:%S"))
+            timeNow = datetime.datetime.now().strftime("%H:%M:%S")
+            
+            #over at the arduino side, this will use different parser for Time 
+            timeNow = timeNow + "T"
+            writeData(timeNow)
             stop_event.wait(1)
 
     # Get the current time
@@ -87,23 +205,59 @@ def alarmFunction():
     print("Wake up!")
     stop_event.set()
 
-# ***** START ALARM FUNCTION ***** 
-t1 = threading.Thread(target=alarmFunction)
-t1.start()
-t1.join()
+if(args.controlMode == "alarm"):
+    alarmH, alarmM = args.alarmTime.split(":")
+    t1 = threading.Thread(target=alarmFunction, args=(alarmH, alarmM))
+    t1.start()
+    t1.join()
 
+#in its own thread 
+def enterCoord(): 
+    while True:
+        print("Enter x and y, enter 'q' to quit")
+        x = input("Enter x: ")
+        y = input("Enter y: ")
+        if x == 'q' or y == 'q':
+            break
+        else:
+            x = int(x)
+            y = int(y)
+            moveNshoot(x,y,1)
 
+def joystick(): 
+    # Loop to get joystick events
+    while True:
+        t = 0 
+        for event in pygame.event.get():            
+            if event.type == pygame.JOYBUTTONDOWN: 
+                #exits the entire program (like a boss)
+                if event.button == 6: 
+                    pygame.quit()
+                    quit() 
+                elif event.button == 0: 
+                    print("FIREEEEEEEE")
+                    t = 1 
 
+            elif event.type == pygame.JOYHATMOTION:
+                # Get the button that was pressed
+                if event.value == (0, 1):
+                    print("D-pad up pressed")
+                    positionInfo[6] += 10 
+                elif event.value == (0, -1):
+                    print("D-pad down pressed")
+                    positionInfo[6] -= 10 
+                elif event.value == (-1, 0):
+                    print("D-pad left pressed")
+                    positionInfo[5] -= 10 
+                elif event.value == (1, 0):
+                    print("D-pad right pressed")
+                    positionInfo[5] += 10 
 
-
-esp32 = serial.Serial('COM7',115200,timeout=.1)
-def writeData(data):
-    esp32.write(data.encode())
-    print(data)
-
+            moveNshoot(positionInfo[5], positionInfo[6], t)
+                
 
 dim = (400, 300)
-#Huge accuracy issues 
+#Huge accuracy issues ???????????????????????????????
 # In cm
 # idx 1 negative to the left 
 # idx 2 negative down 
@@ -152,23 +306,27 @@ class MyWidget(QWidget):
 def getAngle(positionInfo):
     #Todo: You need to change the how it calculates the center >:c 
     scaleFactor = positionInfo[7]
+    x = positionInfo[5]
+    y = positionInfo[6]
+    distance = positionInfo[2]
     #This is wrong, xangle is using 300/2 150 as center 
-    xangle = 90 - math.degrees(math.atan((positionInfo[5]*scaleFactor+positionInfo[0]-150*scaleFactor)/positionInfo[2]))
-    yangle = 90 + math.degrees(math.atan((positionInfo[6]*scaleFactor+positionInfo[1]-200*scaleFactor)/positionInfo[2]))
+    #what the fuck is this code, god help me 
+    xangle = 90 - math.degrees(math.atan((x*scaleFactor+positionInfo[0]-150*scaleFactor)/distance))
+    yangle = 90 + math.degrees(math.atan((y*scaleFactor+positionInfo[1]-200*scaleFactor)/distance))
     return xangle, yangle
 
 
         
 
-
+#x,y
+#t is for trigger, enter 1 to shoot, 0 to not shoot 
+#s is for sweep, it disregard x and y and sweeps according set values
 def moveNshoot(x,y,t,s = 0): 
 
     #Transpose because camera is oriented differently
     temp = x 
     x = y 
     y = temp 
-    #x = 300 - x 
-    #y = 400 - y 
     positionInfo[5] = x
     positionInfo[6] = y 
     xangle,yangle = getAngle(positionInfo)
@@ -176,107 +334,27 @@ def moveNshoot(x,y,t,s = 0):
     writeData(data)
     print(x,y)
 
-def str2bool(v):
-    if v.lower() in ['on', 'yes', 'true', 'y', 't']:
-        return True
-    elif v.lower() in ['off', 'no', 'false', 'n', 'f']:
-        return False
-    else:
-        raise NotImplementedError
-
-
-backends = [cv.dnn.DNN_BACKEND_OPENCV, cv.dnn.DNN_BACKEND_CUDA]
-targets = [cv.dnn.DNN_TARGET_CPU,
-           cv.dnn.DNN_TARGET_CUDA, cv.dnn.DNN_TARGET_CUDA_FP16]
-help_msg_backends = "Choose one of the computation backends: {:d}: OpenCV implementation (default); {:d}: CUDA"
-help_msg_targets = "Choose one of the target computation devices: {:d}: CPU (default); {:d}: CUDA; {:d}: CUDA fp16"
-try:
-    backends += [cv.dnn.DNN_BACKEND_TIMVX]
-    targets += [cv.dnn.DNN_TARGET_NPU]
-    help_msg_backends += "; {:d}: TIMVX"
-    help_msg_targets += "; {:d}: NPU"
-except:
-    print('This version of OpenCV does not support TIM-VX and NPU. Visit https://github.com/opencv/opencv/wiki/TIM-VX-Backend-For-Running-OpenCV-On-NPU for more information.')
-
-parser = argparse.ArgumentParser(
-    description='YuNet: A Fast and Accurate CNN-based Face Detector (https://github.com/ShiqiYu/libfacedetection).')
-parser.add_argument('--input', '-i', type=str,
-                    help='Usage: Set input to a certain image, omit if using camera.')
-parser.add_argument('--model', '-m', type=str, default='face_detection_yunet_2022mar.onnx',
-                    help="Usage: Set model type, defaults to 'face_detection_yunet_2022mar.onnx'.")
-parser.add_argument('--backend', '-b', type=int,
-                    default=backends[0], help=help_msg_backends.format(*backends))
-parser.add_argument('--target', '-t', type=int,
-                    default=targets[0], help=help_msg_targets.format(*targets))
-parser.add_argument('--conf_threshold', type=float, default=0.9,
-                    help='Usage: Set the minimum needed confidence for the model to identify a face, defauts to 0.9. Smaller values may result in faster detection, but will limit accuracy. Filter out faces of confidence < conf_threshold.')
-parser.add_argument('--nms_threshold', type=float, default=0.3,
-                    help='Usage: Suppress bounding boxes of iou >= nms_threshold. Default = 0.3.')
-parser.add_argument('--top_k', type=int, default=5000,
-                    help='Usage: Keep top_k bounding boxes before NMS.')
-parser.add_argument('--save', '-s', type=str, default=True,
-                    help='Usage: Set “True” to save file with results (i.e. bounding box, confidence level). Invalid in case of camera input. Default will be set to “False”.')
-parser.add_argument('--vis', '-v', type=str2bool, default=True,
-                    help='Usage: Default will be set to “True” and will open a new window to show results. Set to “False” to stop visualizations from being shown. Invalid in case of camera input.')
-# Used to control turret movment
-parser.add_argument('--controlMode', type=str, default="manual",
-                    help='Usage: Control coord with mouse click')
-parser.add_argument('--isAlarm', type=str2bool,default=False,
-                    help='Usage: will allow for user input for alarm time')
-args = parser.parse_args()
-
-
-def visualize(image, results, box_color=(0, 255, 0), text_color=(0, 0, 255), fps=None):
-    output = image.copy()
-    output = cv.cvtColor(output, cv.COLOR_BGR2RGB)
-    landmark_color = [
-        (255,   0,   0),  # right eye
-        (0,   0, 255),  # left eye
-        (0, 255,   0),  # nose tip
-        (255,   0, 255),  # right mouth corner
-        (0, 255, 255)  # left mouth corner
-    ]
-
-    if fps is not None:
-        cv.putText(output, 'FPS: {:.2f}'.format(
-            fps), (0, 15), cv.FONT_HERSHEY_SIMPLEX, 0.5, text_color)
-
-    for det in (results if results is not None else []):
-        bbox = det[0:4].astype(np.int32)
-        cv.rectangle(output, (bbox[0], bbox[1]),
-                     (bbox[0]+bbox[2], bbox[1]+bbox[3]), box_color, 2)
-
-        conf = det[-1]
-        cv.putText(output, '{:.2f}'.format(
-            conf), (bbox[0], bbox[1]+12), cv.FONT_HERSHEY_DUPLEX, 0.5, text_color)
-        centerx = bbox[2] / 2 + bbox[0]
-        centery = bbox[3] / 2 + bbox[1]
-        coord = (int(centerx), int(centery))
-        cv.putText(output, 'Coord: {:.2f} , {:.2f}'.format(
-            centerx, centery), (bbox[0], bbox[1]-12), cv.FONT_HERSHEY_DUPLEX, 0.4, box_color)
-        cv.circle(output, coord, 1, box_color, 2)
-
-        landmarks = det[4:14].astype(np.int32).reshape((5, 2))
-        for idx, landmark in enumerate(landmarks):
-            cv.circle(output, landmark, 2, landmark_color[idx], 2)
-
-    return output, coord 
 
 
 def cameraMode():
+    mousePos = [200,200]
+    #this function has to be nested or else it won't register the x,y coord 
     def mouseAction(action,x,y, *args): 
         if (action == cv.EVENT_RBUTTONDBLCLK or action == cv.EVENT_LBUTTONDBLCLK):
             moveNshoot(x,y,1)
 
         if(action==cv.EVENT_MOUSEMOVE): 
             #Not working because the new frames are over writing this text so, refer to visualize function
-            cv.putText(image, 'Coord: {:.2f} , {:.2f}'.format(
-            x, y), (x, y), cv.FONT_HERSHEY_DUPLEX, 0.3, (0,255,255))  
-        
+            mousePos[0] = x
+            mousePos[1] = y
+            #oh no
         
     path = 'results/'
+    #enter coord in its thread 
+    keyboard = threading.Thread(target=enterCoord)
+    keyboard.start() 
 
-
+   
     cv.namedWindow("Video", cv.WINDOW_NORMAL)
     cv.setMouseCallback("Video", mouseAction)
     detected = 0; 
@@ -289,6 +367,7 @@ def cameraMode():
     #X value from 100 - 140 (more variations)
     # X1 angle X2 angle Y angle iteration is just difference / 10 
     while True:
+
         #print(args.controlMode)
         record = False 
         
@@ -307,10 +386,14 @@ def cameraMode():
         image = cv.cvtColor(crop_img, cv.COLOR_RGB2BGR)
         image = cv.flip(image,0); #verticle flip to detect face upright 
         h, w, _ = image.shape
+
+
+        cv.putText(image, 'Coord: {:.2f} , {:.2f}'.format(
+            x, y), (mousePos[0], mousePos[1]), cv.FONT_HERSHEY_DUPLEX, 0.3, (0,255,255))
         
         now = time.time()   
-        elapsedTime =  now - startTime
-        print(elapsedTime)
+        #elapsedTime =  now - startTime
+        #print(elapsedTime)
         # if less than waitTime, then keep checking for face, else sweep once, then back to detect face  
         if(elapsedTime < waitTime or not sweep): 
             # Inference

@@ -95,16 +95,17 @@ def writeData(data):
 def alarmFunction(h,m):
     
     def countTime(stop_event): 
+        #waits for 5 sec for oled to set up 
         time.sleep(5);
         writeData("{}:{}:0#".format(h,m))
-        time.sleep(10) #waits for 10 sec for oled to set up 
+        time.sleep(10) 
 
         #start = datetime.datetime.now()
         while not stop_event.is_set():
             #timeElapsed = datetime.datetime.now() - start prints minutes 
             timeNow = datetime.datetime.now().strftime("%H:%M:%S")
             
-            timeNow = timeNow + "#"
+            timeNow = timeNow + "T"
             writeData(timeNow)
             stop_event.wait(1)
 

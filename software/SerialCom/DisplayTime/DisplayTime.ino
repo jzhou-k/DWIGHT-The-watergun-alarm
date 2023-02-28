@@ -158,7 +158,7 @@ void parseTimeSecond(String data)
   //myString.remove(index, count)
   data.remove(0, data.indexOf(":") + 1); //removes 18:
   data.remove(0, data.indexOf(":") + 1); //removes 18:
-  data.remove(data.indexOf("#"));
+  data.remove(data.indexOf("T"));
   second = data;
 }
 
@@ -172,7 +172,7 @@ void readSerial()
     // Serial.println(data);
 
     //Serial.println(Serial.available());
-    if (data == '#')
+    if (data == 'T')
     {
       parseTimeHour(timeInfo);
       parseTimeMinute(timeInfo);
@@ -182,6 +182,7 @@ void readSerial()
 
       if (!alarm)
       {
+        //registers the first time string as alarm time 
         alarmHour = hour;
         alarmMinute = minute;
         alarm = true;
