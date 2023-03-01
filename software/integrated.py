@@ -225,7 +225,7 @@ def enterCoord():
 def joystickMove(): 
     joystick = pygame.joystick.Joystick(0)
     joystick.init()
-
+    angle = [90,90]
     # Loop to get joystick events
     while True:
         t = 0 
@@ -239,7 +239,20 @@ def joystickMove():
                     print("FIREEEEEEEE")
                     t = 1 
                     moveNshootJoystick(t)
+            
+            elif event.type == pygame.JOYAXISMOTION:
+                # Get the axis values
+                x_axis = joystick.get_axis(0)
+                y_axis = joystick.get_axis(1)
+            
+                xangle = x_axis 
+                yangle = y_axis 
+                if(xangle + angle[0] >= 70 and xangle + angle[0] <= 110): 
+                    angle[0] = angle[0] + xangle
+                if(yangle + angle[1] >= 70 and yangle + angle[1] <= 110): 
+                    angle[1] = angle[1] + yangle
                 
+                moveNshootJoystickBall(angle[0],angle[1],t)
 
             elif event.type == pygame.JOYHATMOTION:
                 # Get the button that was pressed
@@ -342,6 +355,12 @@ def moveNshootJoystick(t,s = 0):
     data = "X{}Y{}Z{}S{}#".format(xangle,yangle,t,s)
     writeData(data)
     print(positionInfo[5],positionInfo[6])
+
+def moveNshootJoystickBall(xangle,yangle,t,s = 0): 
+    data = "X{}Y{}Z{}S{}#".format(xangle,yangle,t,s)
+    writeData(data)
+    print(xangle,yangle)
+
 
 
 def cameraMode():
