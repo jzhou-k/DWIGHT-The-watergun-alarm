@@ -13,10 +13,10 @@ dnn face detection
 
 - they can only detect max face size 300x300
 
-Serial communication
+Firmware
 
 - check if com and baud rate match
-
+- everything should share one single gnd pin on the board 
 3D printing
 
 - dont, print large surfaces on the plate, its hard to take out

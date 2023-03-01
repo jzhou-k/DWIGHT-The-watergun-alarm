@@ -30,8 +30,8 @@ from yunet import YuNet
 pygame.init()
 
 # Set up the joystick
-#joystick = pygame.joystick.Joystick(0)
-#joystick.init()
+joystick = pygame.joystick.Joystick(0)
+joystick.init()
 
 def str2bool(v):
     if v.lower() in ['on', 'yes', 'true', 'y', 't']:
@@ -136,12 +136,12 @@ def writeData(data):
 
 
 #Alarm setting better way of setting alarm bruh 
-def alarmFunction():
+def alarmFunction(h,m):
     
     def countTime(stop_event): 
         #waits for 5 sec for oled to set up 
         time.sleep(5);
-        writeData("{}:{}:0#".format(h,m))
+        writeData("{}:{}:0T".format(h,m))
         time.sleep(10) 
 
         #start = datetime.datetime.now()
@@ -163,8 +163,8 @@ def alarmFunction():
     #This is the most dumb solution : ^) 
     #Parse string to hour min then pass into time delta, the day will be incremented automatically 
     # 'Wed Jun  9 04:26:40 1993'. standard format 
-    alarmH = 20
-    alarmM = 5
+    alarmH = h
+    alarmM = m 
     nowH = (int)(now.strftime("%H"))
     nowM = (int)(now.strftime("%M"))
 
@@ -207,19 +207,21 @@ def alarmFunction():
 
 if(args.controlMode == "alarm"):
     alarmH, alarmM = args.alarmTime.split(":")
-    t1 = threading.Thread(target=alarmFunction, args=(alarmH, alarmM))
+    t1 = threading.Thread(target=alarmFunction, args=(int(alarmH), int(alarmM)))
     t1.start()
     t1.join()
 
 #in its own thread 
 def enterCoord(): 
     while True:
+        x = 150 
+        y = 150
         print("Enter x and y, enter 'q' to quit")
         x = input("Enter x: ")
         y = input("Enter y: ")
         if x == 'q' or y == 'q':
             break
-        else:
+        elif (x != '' and y != ''):
             x = int(x)
             y = int(y)
             moveNshoot(x,y,1)
@@ -352,7 +354,11 @@ def cameraMode():
     path = 'results/'
     #enter coord in its thread 
     keyboard = threading.Thread(target=enterCoord)
-    keyboard.start() 
+    joystickThread = threading.Thread(target=joystick)
+    joystickThread.start()
+    #keyboard.start() 
+
+    
 
    
     cv.namedWindow("Video", cv.WINDOW_NORMAL)
@@ -389,7 +395,7 @@ def cameraMode():
 
 
         cv.putText(image, 'Coord: {:.2f} , {:.2f}'.format(
-            x, y), (mousePos[0], mousePos[1]), cv.FONT_HERSHEY_DUPLEX, 0.3, (0,255,255))
+            mousePos[0], mousePos[1]), (mousePos[0], mousePos[1]), cv.FONT_HERSHEY_DUPLEX, 0.3, (0,255,255))
         
         now = time.time()   
         #elapsedTime =  now - startTime
