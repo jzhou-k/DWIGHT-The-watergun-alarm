@@ -30,8 +30,6 @@ from yunet import YuNet
 pygame.init()
 
 # Set up the joystick
-#joystick = pygame.joystick.Joystick(0)
-#joystick.init()
 
 def str2bool(v):
     if v.lower() in ['on', 'yes', 'true', 'y', 't']:
@@ -224,7 +222,10 @@ def enterCoord():
             y = int(y)
             moveNshoot(x,y,1)
 
-def joystick(): 
+def joystickMove(): 
+    joystick = pygame.joystick.Joystick(0)
+    joystick.init()
+
     # Loop to get joystick events
     while True:
         t = 0 
@@ -237,6 +238,8 @@ def joystick():
                 elif event.button == 0: 
                     print("FIREEEEEEEE")
                     t = 1 
+                    moveNshootJoystick(t)
+                
 
             elif event.type == pygame.JOYHATMOTION:
                 # Get the button that was pressed
@@ -253,7 +256,7 @@ def joystick():
                     print("D-pad right pressed")
                     positionInfo[5] += 10 
 
-            moveNshoot(positionInfo[5], positionInfo[6], t)
+                moveNshootJoystick(t)
                 
 
 dim = (400, 300)
@@ -334,6 +337,11 @@ def moveNshoot(x,y,t,s = 0):
     writeData(data)
     print(x,y)
 
+def moveNshootJoystick(t,s = 0): 
+    xangle,yangle = getAngle(positionInfo)
+    data = "X{}Y{}Z{}S{}#".format(xangle,yangle,t,s)
+    writeData(data)
+    print(positionInfo[5],positionInfo[6])
 
 
 def cameraMode():
@@ -352,7 +360,9 @@ def cameraMode():
     path = 'results/'
     #enter coord in its thread 
     keyboard = threading.Thread(target=enterCoord)
-    keyboard.start() 
+    joystickThreading = threading.Thread(target=joystickMove)
+    joystickThreading.start()
+    #keyboard.start() 
 
    
     cv.namedWindow("Video", cv.WINDOW_NORMAL)
