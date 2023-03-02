@@ -146,21 +146,15 @@ args = parser.parse_args()
 
 
 
-esp32 = serial.Serial('COM7',115200,timeout=.1)
-def writeData(data):
-    esp32.write(data.encode())
-    #print(data)
-
-
 
 #Alarm setting better way of setting alarm bruh 
-def alarmFunction():
+def alarmFunction(h,m):
     
     def countTime(stop_event): 
         #waits for 5 sec for oled to set up 
-        time.sleep(5);
-        writeData("{}:{}:0#".format(h,m))
-        time.sleep(10) 
+        #time.sleep(5);
+        #writeData("{}:{}:0#".format(h,m))
+        #time.sleep(10) 
 
         #start = datetime.datetime.now()
         while not stop_event.is_set():
@@ -169,7 +163,8 @@ def alarmFunction():
             
             #over at the arduino side, this will use different parser for Time 
             timeNow = timeNow + "T"
-            writeData(timeNow)
+            print(timeNow)
+            #writeData(timeNow)
             stop_event.wait(1)
 
     # Get the current time
@@ -181,8 +176,8 @@ def alarmFunction():
     #This is the most dumb solution : ^) 
     #Parse string to hour min then pass into time delta, the day will be incremented automatically 
     # 'Wed Jun  9 04:26:40 1993'. standard format 
-    alarmH = 20
-    alarmM = 5
+    alarmH = h
+    alarmM = m
     nowH = (int)(now.strftime("%H"))
     nowM = (int)(now.strftime("%M"))
 
@@ -225,9 +220,15 @@ def alarmFunction():
 
 if(args.controlMode == "alarm"):
     alarmH, alarmM = args.alarmTime.split(":")
-    t1 = threading.Thread(target=alarmFunction, args=(alarmH, alarmM))
+    t1 = threading.Thread(target=alarmFunction, args=(int(alarmH), int(alarmM)))
     t1.start()
     t1.join()
+
+
+esp32 = serial.Serial('COM7',115200,timeout=.1)
+def writeData(data):
+    esp32.write(data.encode())
+    #print(data)
 
 #in its own thread 
 def enterCoord(): 
