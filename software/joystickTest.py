@@ -1,3 +1,4 @@
+from math import degrees
 import pygame
 
 # Initialize pygame
@@ -16,7 +17,8 @@ while True:
             y_axis = joystick.get_axis(1)
             
             # Print the axis values
-            print("X Axis: {}, Y Axis: {}".format(x_axis, y_axis))
+            print("X Axis: {}, Y Axis: {}".format(x_axis * 20, y_axis))
+            #print("X Axis: {}, Y Axis: {}".format(degrees(x_axis), degrees(y_axis)))
         
         elif event.type == pygame.JOYBUTTONDOWN: 
             if event.button == 6: 

@@ -129,7 +129,7 @@ args = parser.parse_args()
 esp32 = serial.Serial('COM7',115200,timeout=.1)
 def writeData(data):
     esp32.write(data.encode())
-    print(data)
+    #print(data)
 
 
 
@@ -247,12 +247,12 @@ def joystickMove():
             
                 xangle = x_axis 
                 yangle = y_axis 
-                if(xangle + angle[0] >= 70 and xangle + angle[0] <= 110): 
-                    angle[0] = angle[0] + xangle
-                if(yangle + angle[1] >= 70 and yangle + angle[1] <= 110): 
-                    angle[1] = angle[1] + yangle
-                
-                moveNshootJoystickBall(angle[0],angle[1],t)
+                if(xangle + positionInfo[5] >= 0 and xangle + positionInfo[5] <= 400): 
+                    positionInfo[5] += xangle
+                if(yangle + positionInfo[6] >= 0 and yangle + positionInfo[6] <= 300): 
+                    positionInfo[6] += yangle
+                pygame.time.wait(10) 
+                moveNshootJoystick(t)
 
             elif event.type == pygame.JOYHATMOTION:
                 # Get the button that was pressed
@@ -271,6 +271,7 @@ def joystickMove():
 
                 moveNshootJoystick(t)
                 
+        #pygame.clock.tick(60) 
 
 dim = (400, 300)
 #Huge accuracy issues ???????????????????????????????
