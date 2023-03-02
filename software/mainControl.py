@@ -368,8 +368,8 @@ def getAngle(positionInfo):
 #t is for trigger, enter 1 to shoot, 0 to not shoot 
 #s is for sweep, it disregard x and y and sweeps according set values
 def moveNshoot(x,y,t,s = 0): 
-    positionInfo[5] = x
-    positionInfo[6] = y 
+    positionInfo[5] = y
+    positionInfo[6] = x 
     xangle,yangle = getAngle(positionInfo)
     data = "X{}Y{}Z{}S{}#".format(xangle,yangle,t,s)
     writeData(data)
@@ -392,7 +392,7 @@ def moveNshootJoystick():
 
 def sendPos(): 
     while not quitEvent.is_set(): 
-        time.sleep(0.2)
+        time.sleep(0.3)
         print("{}, {}, {}, {}".format(round(positionInfo[5],1),round(positionInfo[6],1),positionInfo[-2],positionInfo[-1]))
         moveNshootJoystick()
 
@@ -463,17 +463,16 @@ def mainMode():
 
 
         cv.putText(image, 'Coord: {:.2f} , {:.2f}'.format(
-            x, y), (mousePos[0], mousePos[1]), cv.FONT_HERSHEY_DUPLEX, 0.3, (0,255,255))
+            mousePos[0], mousePos[1]), (mousePos[0], mousePos[1]), cv.FONT_HERSHEY_DUPLEX, 0.3, (0,255,255))
         
         now = time.time()  
         ###################################SWEEEEP 
-        #elapsedTime =  now - startTime
+        elapsedTime =  now - startTime
         ###################################
-        #print(elapsedTime)
+        print(elapsedTime)
         # if less than waitTime, then keep checking for face, else sweep once, then back to detect face  
         if(elapsedTime < waitTime or not sweep): 
             positionInfo[-1] = 0 
-            
             # Inference
             model.setInputSize([w, h])
             results = model.infer(image)
@@ -492,7 +491,7 @@ def mainMode():
                 image, coord = visualize(image, results)
                 #This will shoot everytime a face detected, might be a bad idea to code this....
                 #moveNshoot(coord[0], coord[1], 1)
-                positionInfo[5], positionInfo[6] = switchCoord(coord[0], coord[1])
+                positionInfo[5], positionInfo[6] = switchCoord(coord[0]+20, coord[1])
                 positionInfo[-2] = 1 
 
             elif(positionInfo[-2] == 1):

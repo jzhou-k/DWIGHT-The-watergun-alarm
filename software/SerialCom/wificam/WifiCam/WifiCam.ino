@@ -73,8 +73,6 @@ void setup()
 
   triggerServo.write(triggerInit);
  
-
-
   WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -123,13 +121,12 @@ void loop()
 
     if (sweepInfo == 1 && !start_sweep)
     {
-      sweep(87, 105, 115);
+      sweep(80, 105, 115);
       start_sweep = true; 
     }
     else
     {
       sweepInfo = 0;
-      start_sweep = false;
       xservo.write(x_angle);
       yservo.write(y_angle);
 
@@ -265,7 +262,7 @@ int parseZinfo(String data)
 
 int parseSinfo(String data)
 {
-  // 1 to shoot 0 to not shoot
+  // 1 to sweep 0 to not sweep 
   data.remove(data.indexOf("X"), data.indexOf("S") + 1);
   data.remove(data.indexOf("#"));
   return data.toInt();
@@ -301,7 +298,7 @@ void sweep(int y, int xStart, int xEnd)
     xservo.write(i);
     delay(1500);
     trigger();
-    delay(300);
+    delay(300);  
   }
 
   delay(1000);
