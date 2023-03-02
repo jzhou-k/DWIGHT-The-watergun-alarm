@@ -10,6 +10,8 @@ int triggerInfo = 0;
 int sweepInfo = 0;
 String angle_info = "";
 
+int triggerInit = 25; 
+int triggerActivate = 55;
 
 Servo xservo;
 Servo yservo;
@@ -69,8 +71,8 @@ void setup()
     200
   );
 
-  // triggerServo.write(0);
-  initalizeGun();
+  triggerServo.write(triggerInit);
+ 
 
 
   WiFi.persistent(false);
@@ -274,9 +276,9 @@ void trigger()
 
   //manual control mode
   delay(100);
-  triggerServo.write(55);
+  triggerServo.write(triggerActivate);
   delay(200);
-  triggerServo.write(20);
+  triggerServo.write(triggerInit);
   delay(100);
 
   //For alarm mode

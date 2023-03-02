@@ -42,7 +42,7 @@ String second = "y";
 String alarmHour = "haha";
 String alarmMinute = "I'm dying inside";
 String timeInfo = "";
-bool alarm = false;
+bool alarmMode = false;
 
 
 static const unsigned char PROGMEM logo_bmp[] =
@@ -180,12 +180,12 @@ void readSerial()
       timeInfo = "";
 
 
-      if (!alarm)
+      if (!alarmMode)
       {
         //registers the first time string as alarm time 
         alarmHour = hour;
         alarmMinute = minute;
-        alarm = true;
+        alarmMode = true;
       }
 
     }

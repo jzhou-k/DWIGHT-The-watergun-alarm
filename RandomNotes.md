@@ -29,3 +29,5 @@ Software
 
 to the mfer who uses this to divide their code
 8=======D
+
+PLS STOP USING MAGIC NUMBERS 
