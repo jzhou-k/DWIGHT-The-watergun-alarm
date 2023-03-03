@@ -45,10 +45,11 @@ insert photos and videos here
 - Oh right, and a small watergun I got from Canadian Tire
 
 ### 3D parts 
-![gunbrace attachment side](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/hardware/brace%20attachment%20side.png 'High Five')
-![gunbrace trigger side](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/hardware/gun%20brace%20and%20trigger%20servo%20holder.png 'High Five')
-![gun mount](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/hardware/gun%20mount.png 'High Five')
-![camera holder](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/hardware/esp%20camera%20holder/image.png 'High Five')
+![camera holder](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/hardware/esp%20camera%20holder/image.png)
+![camera holder backside](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/hardware/esp%20camera%20holder/image%20back.png)
+![gun mount](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/hardware/gun%20mount.png)
+![gunbrace attachment side](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/hardware/brace%20attachment%20side.png)
+![gunbrace trigger side](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/hardware/gun%20brace%20and%20trigger%20servo%20holder.png)
 
 ## Software/Firmware
 
