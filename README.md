@@ -2,7 +2,7 @@
 
 ## TLDR
 
-This is a automatic water gun alarm that shoots people in the face to wake them up.
+This is a automatic water gun alarm that shoots people in the face to wake them up. [^1]
 it will use esp32 camera module and opencv dnn model to detect faces and aim the watergun with 2 axis servos.
 
 All functions:
@@ -63,4 +63,4 @@ Some things to note:
 - the face detection library im using only detect max face dimension of 300 x 300, so make sure to shrink your video down
 
 
-This invention is the epitome of unnecessary and extra, but hey, I'm studying engineering, what else am I going to use my skills on.
+[^1]: This invention is the epitome of unnecessary and extra, but hey, I'm studying engineering, what else am I going to use my skills on.
