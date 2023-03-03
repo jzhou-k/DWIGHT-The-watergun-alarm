@@ -54,6 +54,8 @@ insert photos and videos here
 ## Software/Firmware
 
 nothing much to say here, the code is pretty simple.
+wifiCam.ino runs on esp32, it handles the camera server and parses strings to move the servos 
+mainControl.py contains the alarm function, once alarm rings it starts face detection and sends the string to esp32 
 
 Some things to note:
 
