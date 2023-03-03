@@ -8,7 +8,7 @@ it will use esp32 camera module and opencv dnn model to detect faces and aim the
 All functions:
 
 - alarm function, input wake up time using arg parser
-- face detection using dnn models (insert github link here)
+- face detection using YUNET dnn models [YUNET DNN model]("https://github.com/jzhou-k/opencv_zoo/tree/master/models/face_detection_yunet")
 - manual mouse control with/without camera output
 - joystick control
 
