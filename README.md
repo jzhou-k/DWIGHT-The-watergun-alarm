@@ -34,7 +34,7 @@ insert photos and videos here
 
 ### parts and equipments I used
 
-- 3d printer, [The 3d parts](https://hehehe](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/hardware)
+- 3d printer, [The 3d parts](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/hardware)
 - some m3 screws of various lengths
 - 20kg servo * 2
 - mg995 servo * 1
