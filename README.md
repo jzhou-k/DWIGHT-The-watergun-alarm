@@ -8,7 +8,7 @@ it will use esp32 camera module and opencv dnn model to detect faces and aim the
 All functions:
 
 - alarm function, input wake up time using arg parser
-- face detection using YUNET dnn models [YUNET DNN model]("https://github.com/jzhou-k/opencv_zoo/tree/master/models/face_detection_yunet")
+- face detection using YUNET dnn models [YUNET DNN model](https://github.com/jzhou-k/opencv_zoo/tree/master/models/face_detection_yunet)
 - manual mouse control with/without camera output
 - joystick control
 
@@ -34,7 +34,7 @@ insert photos and videos here
 
 ### parts and equipments I used
 
-- 3d printer, [The 3d parts](https://hehehe)
+- 3d printer, [The 3d parts](https://hehehe](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/hardware)
 - some m3 screws of various lengths
 - 20kg servo * 2
 - mg995 servo * 1
