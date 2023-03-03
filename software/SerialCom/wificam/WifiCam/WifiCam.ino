@@ -34,8 +34,8 @@ void initalizeGun();
 void sweep(int y, int xStart, int xEnd);
 
 
-static const char* WIFI_SSID = "BELL011";
-static const char* WIFI_PASS = "69D19EFEA96F";
+static const char* WIFI_SSID = "your wifi name";
+static const char* WIFI_PASS = "your wifi password";
 esp32cam::Resolution initialResolution;
 
 
