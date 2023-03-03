@@ -151,14 +151,9 @@ args = parser.parse_args()
 def alarmFunction(h,m):
     
     def countTime(stop_event): 
-        #waits for 5 sec for oled to set up 
-        #time.sleep(5);
-        #writeData("{}:{}:0#".format(h,m))
-        #time.sleep(10) 
 
-        #start = datetime.datetime.now()
         while not stop_event.is_set():
-            #timeElapsed = datetime.datetime.now() - start
+         
             timeNow = datetime.datetime.now().strftime("%H:%M:%S")
             
             #over at the arduino side, this will use different parser for Time 
@@ -173,7 +168,7 @@ def alarmFunction(h,m):
 
 
     #TO actually enter the alarm time e.g 7:30 
-    #This is the most dumb solution : ^) 
+    #This is the most dumb solution :                                  ^) 
     #Parse string to hour min then pass into time delta, the day will be incremented automatically 
     # 'Wed Jun  9 04:26:40 1993'. standard format 
     alarmH = h
@@ -315,41 +310,6 @@ def joystickMove():
         #     positionInfo[6] = resulty
     #pygame.clock.tick(60) 
 
-dim = (400, 300)
-
-
-class MyWidget(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setFixedSize(dim[0], dim[1])
-
-    def mousePressEvent(self, event):
-        #print("Mouse clicked at", event.x(), event.y())
-        self.handle_mouse_click(event.x(), event.y())
-
-    def handle_mouse_click(self, x, y):
-        mouseAction(x,y)
-        
-        # print(data)
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Q:
-            self.close()
-        if event.key() == Qt.Key_Return:
-            print("SHOOT")
-    
-    def center(self):
-        # Get the dimensions of the screen
-        screen = QDesktopWidget().screenGeometry()
-
-        # Calculate the position of the window
-        x = (screen.width() - self.width()) // 2
-        y = (screen.height() - self.height()) // 2
-
-        # Move the window to the center of the screen
-        self.move(x, y)
-
-
 def getAngle(positionInfo):
     #Todo: You need to change the how it calculates the center >:c 
     scaleFactor = positionInfo[7]
@@ -397,12 +357,6 @@ def sendPos():
         print("{}, {}, {}, {}".format(round(positionInfo[5],1),round(positionInfo[6],1),positionInfo[-2],positionInfo[-1]))
         moveNshootJoystick()
 
-def moveNshootJoystickBall(xangle,yangle,t,s = 0): 
-    data = "X{}Y{}Z{}S{}#".format(xangle,yangle,t,s)
-    writeData(data)
-    print(xangle,yangle)
-
-
 
 def mainMode():
     mousePos = [200,200]
@@ -434,7 +388,6 @@ def mainMode():
     cv.setMouseCallback("Video", mouseAction)
 
     detected = 0; #detected face 
-
 
     now = datetime.datetime.now()  
     startTime = time.time() 
@@ -491,7 +444,6 @@ def mainMode():
                 # Draw results on the input image
                 image, coord = visualize(image, results)
                 #This will shoot everytime a face detected, might be a bad idea to code this....
-                #moveNshoot(coord[0], coord[1], 1)
                 positionInfo[5], positionInfo[6] = switchCoord(coord[0]+20, coord[1])
                 positionInfo[-2] = 1 
 
