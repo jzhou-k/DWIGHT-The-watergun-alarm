@@ -32,6 +32,8 @@ int triggerInfo = 0;
 int sweepInfo = 0;
 String angle_info = "";
 
+int triggerInit = 25; 
+int triggerActivate = 55;
 
 Servo xservo;
 Servo yservo;
@@ -59,8 +61,8 @@ void parseTimeMinute(String data);
 void parseTimeSecond(String data);
 
 
-static const char* WIFI_SSID = "BELL011";
-static const char* WIFI_PASS = "69D19EFEA96F";
+static const char* WIFI_SSID = "your wifi name";
+static const char* WIFI_PASS = "your wifi password";
 esp32cam::Resolution initialResolution;
 
 
@@ -143,10 +145,8 @@ void setup()
     200
   );
 
-  // triggerServo.write(0);
-  initalizeGun();
-
-
+  triggerServo.write(triggerInit);
+ 
   WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -195,13 +195,12 @@ void loop()
 
     if (sweepInfo == 1 && !start_sweep)
     {
-      sweep(87, 105, 115);
-      start_sweep = true;
+      sweep(80, 105, 115);
+      start_sweep = true; 
     }
     else
     {
       sweepInfo = 0;
-      start_sweep = false;
       xservo.write(x_angle);
       yservo.write(y_angle);
 
@@ -385,7 +384,7 @@ int parseZinfo(String data)
 
 int parseSinfo(String data)
 {
-  // 1 to shoot 0 to not shoot
+  // 1 to sweep 0 to not sweep 
   data.remove(data.indexOf("X"), data.indexOf("S") + 1);
   data.remove(data.indexOf("#"));
   return data.toInt();
@@ -396,9 +395,9 @@ void trigger()
 
   //manual control mode
   delay(100);
-  triggerServo.write(55);
+  triggerServo.write(triggerActivate);
   delay(200);
-  triggerServo.write(20);
+  triggerServo.write(triggerInit);
   delay(100);
 
 }
@@ -413,7 +412,7 @@ void sweep(int y, int xStart, int xEnd)
     xservo.write(i);
     delay(1500);
     trigger();
-    delay(300);
+    delay(300);  
   }
 
   delay(1000);

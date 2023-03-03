@@ -28,10 +28,28 @@ from yunet import YuNet
 
 # Initialize pygame
 pygame.init()
+quitEvent = threading.Event() 
+
+X_CENTER = 200 
+Y_CENTER = 150
+
+#Huge accuracy issues ???????????????????????????????
+# In cm
+# idx 1 negative to the left 
+# idx 2 negative down 
+# hindsight this will work better as a object right... fuck 
+# Configure so the gun defaults to aim at the center of the camera footage
+# Turret will be the reference position, 
+# idx = 0 x distance of camera, idx = 1 y distance of camera, 
+# idx = 2 how far away the camera is, 
+# idx = 3 - 4aspect ratio of camera footage x,y, 
+# idx = 5-6 actual aim coord, default is centered, this will change
+# pixel scale factor
+# trigger 
+# shoot
+positionInfo = [-25,-30,75,400,300,X_CENTER,Y_CENTER,0.2,0,0] #1px = 1cm need to test this out with a ruler or something(a sheet of paper with notchings)
 
 # Set up the joystick
-joystick = pygame.joystick.Joystick(0)
-joystick.init()
 
 def str2bool(v):
     if v.lower() in ['on', 'yes', 'true', 'y', 't']:
@@ -128,30 +146,20 @@ args = parser.parse_args()
 
 
 
-esp32 = serial.Serial('COM7',115200,timeout=.1)
-def writeData(data):
-    esp32.write(data.encode())
-    print(data)
-
-
 
 #Alarm setting better way of setting alarm bruh 
 def alarmFunction(h,m):
     
     def countTime(stop_event): 
-        #waits for 5 sec for oled to set up 
-        time.sleep(5);
-        writeData("{}:{}:0T".format(h,m))
-        time.sleep(10) 
 
-        #start = datetime.datetime.now()
         while not stop_event.is_set():
-            #timeElapsed = datetime.datetime.now() - start
+         
             timeNow = datetime.datetime.now().strftime("%H:%M:%S")
             
             #over at the arduino side, this will use different parser for Time 
             timeNow = timeNow + "T"
-            writeData(timeNow)
+            print(timeNow)
+            #writeData(timeNow)
             stop_event.wait(1)
 
     # Get the current time
@@ -160,11 +168,11 @@ def alarmFunction(h,m):
 
 
     #TO actually enter the alarm time e.g 7:30 
-    #This is the most dumb solution : ^) 
+    #This is the most dumb solution :                                  ^) 
     #Parse string to hour min then pass into time delta, the day will be incremented automatically 
     # 'Wed Jun  9 04:26:40 1993'. standard format 
     alarmH = h
-    alarmM = m 
+    alarmM = m
     nowH = (int)(now.strftime("%H"))
     nowM = (int)(now.strftime("%M"))
 
@@ -211,35 +219,51 @@ if(args.controlMode == "alarm"):
     t1.start()
     t1.join()
 
+
+esp32 = serial.Serial('COM7',115200,timeout=.1)
+def writeData(data):
+    esp32.write(data.encode())
+    #print(data)
+
 #in its own thread 
 def enterCoord(): 
     while True:
-        x = 150 
-        y = 150
         print("Enter x and y, enter 'q' to quit")
         x = input("Enter x: ")
         y = input("Enter y: ")
         if x == 'q' or y == 'q':
             break
-        elif (x != '' and y != ''):
+        else:
             x = int(x)
             y = int(y)
             moveNshoot(x,y,1)
 
-def joystick(): 
+def joystickMove(): 
+
+    pygame.joystick.init()
+    joystickList = [pygame.joystick.Joystick(i) for i in range(pygame.joystick.get_count())]
+    joystick = joystickList[0]
+    convert = (0.001)
     # Loop to get joystick events
     while True:
-        t = 0 
+        t = 0 #python mainControl.py
+        positionInfo[-2] = t
         for event in pygame.event.get():            
             if event.type == pygame.JOYBUTTONDOWN: 
                 #exits the entire program (like a boss)
                 if event.button == 6: 
                     pygame.quit()
                     quit() 
+                elif event.button == 1: 
+                    positionInfo[5] = X_CENTER
+                    positionInfo[6] = Y_CENTER 
                 elif event.button == 0: 
                     print("FIREEEEEEEE")
                     t = 1 
-
+                    positionInfo[-2] = t 
+                    time.sleep(0.5)
+            
+        
             elif event.type == pygame.JOYHATMOTION:
                 # Get the button that was pressed
                 if event.value == (0, 1):
@@ -253,57 +277,38 @@ def joystick():
                     positionInfo[5] -= 10 
                 elif event.value == (1, 0):
                     print("D-pad right pressed")
-                    positionInfo[5] += 10 
-
-            moveNshoot(positionInfo[5], positionInfo[6], t)
-                
-
-dim = (400, 300)
-#Huge accuracy issues ???????????????????????????????
-# In cm
-# idx 1 negative to the left 
-# idx 2 negative down 
-# hindsight this will work better as a object right... fuck 
-# Configure so the gun defaults to aim at the center of the camera footage
-# Turret will be the reference position, 
-# idx = 0 x distance of camera, idx = 1 y distance of camera, 
-# idx = 2 how far away the camera is, 
-# idx = 3 - 4aspect ratio of camera footage x,y, 
-# idx = 5-6 actual aim coord default is centered, this will change
-# pixel scale factor
-positionInfo = [-25,-30,75,400,300,200,150,0.2] #1px = 1cm need to test this out with a ruler or something(a sheet of paper with notchings)
-
-class MyWidget(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setFixedSize(dim[0], dim[1])
-
-    def mousePressEvent(self, event):
-        #print("Mouse clicked at", event.x(), event.y())
-        self.handle_mouse_click(event.x(), event.y())
-
-    def handle_mouse_click(self, x, y):
-        mouseAction(x,y)
+                    positionInfo[5] += 10        
         
-        # print(data)
 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Q:
-            self.close()
-        if event.key() == Qt.Key_Return:
-            print("SHOOT")
     
-    def center(self):
-        # Get the dimensions of the screen
-        screen = QDesktopWidget().screenGeometry()
+        # Get the axis values
+        x_axis = joystick.get_axis(0)
+        y_axis = joystick.get_axis(1)
 
-        # Calculate the position of the window
-        x = (screen.width() - self.width()) // 2
-        y = (screen.height() - self.height()) // 2
+        #Deadzone adjustment 
+        if(x_axis <= 0.20 and x_axis >= -0.20): 
+            x_axis = 0 
+        if(y_axis <= 0.20 and y_axis >= -0.20): 
+            y_axis = 0
 
-        # Move the window to the center of the screen
-        self.move(x, y)
+        
+        resultx = x_axis*(convert) + positionInfo[5]
+        resulty = y_axis*(convert) + positionInfo[6]
 
+        if(resultx < 0): 
+            resultx = 0
+        if(resulty < 0): 
+            resulty = 0 
+        
+        positionInfo[5] = resultx
+        positionInfo[6] = resulty
+        
+
+        # if( resultx >= 0 and resultx <= 420): 
+        #     positionInfo[5] = resultx
+        # if(resulty >= 0 and resulty <= 320): 
+        #     positionInfo[6] = resulty
+    #pygame.clock.tick(60) 
 
 def getAngle(positionInfo):
     #Todo: You need to change the how it calculates the center >:c 
@@ -324,26 +329,42 @@ def getAngle(positionInfo):
 #t is for trigger, enter 1 to shoot, 0 to not shoot 
 #s is for sweep, it disregard x and y and sweeps according set values
 def moveNshoot(x,y,t,s = 0): 
-
-    #Transpose because camera is oriented differently
-    temp = x 
-    x = y 
-    y = temp 
-    positionInfo[5] = x
-    positionInfo[6] = y 
+    positionInfo[5] = y
+    positionInfo[6] = x 
     xangle,yangle = getAngle(positionInfo)
     data = "X{}Y{}Z{}S{}#".format(xangle,yangle,t,s)
     writeData(data)
     print(x,y)
 
+def switchCoord(x,y): 
+    #Transpose because camera is oriented differently
+    temp = x 
+    x = y 
+    y = temp 
+    return x,y
+
+def moveNshootJoystick(): 
+    xangle,yangle = getAngle(positionInfo)
+    trigger = positionInfo[-2]
+    shoot = positionInfo[-1]
+    data = "X{}Y{}Z{}S{}#".format(xangle,yangle,trigger,shoot)
+    writeData(data)
+    #print(positionInfo[5],positionInfo[6])
+
+def sendPos(): 
+    while not quitEvent.is_set(): 
+        time.sleep(0.3)
+        print("{}, {}, {}, {}".format(round(positionInfo[5],1),round(positionInfo[6],1),positionInfo[-2],positionInfo[-1]))
+        moveNshootJoystick()
 
 
-def cameraMode():
+def mainMode():
     mousePos = [200,200]
     #this function has to be nested or else it won't register the x,y coord 
     def mouseAction(action,x,y, *args): 
         if (action == cv.EVENT_RBUTTONDBLCLK or action == cv.EVENT_LBUTTONDBLCLK):
             moveNshoot(x,y,1)
+
 
         if(action==cv.EVENT_MOUSEMOVE): 
             #Not working because the new frames are over writing this text so, refer to visualize function
@@ -354,26 +375,27 @@ def cameraMode():
     path = 'results/'
     #enter coord in its thread 
     keyboard = threading.Thread(target=enterCoord)
-    joystickThread = threading.Thread(target=joystick)
-    joystickThread.start()
+    #Keeps tracks of joystick 
+    joystickThreading = threading.Thread(target=joystickMove)
+    #Continues to send angle data every 0.5 via serial communnication 
+    sendPosThread = threading.Thread(target=sendPos)
+    
+    joystickThreading.start()
+    sendPosThread.start() 
     #keyboard.start() 
 
-    
-
-   
     cv.namedWindow("Video", cv.WINDOW_NORMAL)
     cv.setMouseCallback("Video", mouseAction)
-    detected = 0; 
+
+    detected = 0; #detected face 
+
     now = datetime.datetime.now()  
     startTime = time.time() 
     waitTime = 15 #waits for 120 seconds, if no face, start 扫射 for 10 times (5 times from and back)
     elapsedTime = 0 
     sweep = True 
-    #Y value from 240 - 260 just say 250 then 
-    #X value from 100 - 140 (more variations)
-    # X1 angle X2 angle Y angle iteration is just difference / 10 
-    while True:
 
+    while True:
         #print(args.controlMode)
         record = False 
         
@@ -397,11 +419,14 @@ def cameraMode():
         cv.putText(image, 'Coord: {:.2f} , {:.2f}'.format(
             mousePos[0], mousePos[1]), (mousePos[0], mousePos[1]), cv.FONT_HERSHEY_DUPLEX, 0.3, (0,255,255))
         
-        now = time.time()   
-        #elapsedTime =  now - startTime
-        #print(elapsedTime)
+        now = time.time()  
+        ###################################SWEEEEP 
+        elapsedTime =  now - startTime
+        ###################################
+        print(elapsedTime)
         # if less than waitTime, then keep checking for face, else sweep once, then back to detect face  
         if(elapsedTime < waitTime or not sweep): 
+            positionInfo[-1] = 0 
             # Inference
             model.setInputSize([w, h])
             results = model.infer(image)
@@ -419,16 +444,20 @@ def cameraMode():
                 # Draw results on the input image
                 image, coord = visualize(image, results)
                 #This will shoot everytime a face detected, might be a bad idea to code this....
-                moveNshoot(coord[0], coord[1], 1)
+                positionInfo[5], positionInfo[6] = switchCoord(coord[0]+20, coord[1])
+                positionInfo[-2] = 1 
+
+            elif(positionInfo[-2] == 1):
+                time.sleep(0.5)
+                positionInfo[-2] = 0
+        
+
+
         else:
             sweep = False 
             record = True 
-            s = 1 
-            moveNshoot(0,0,0,s)
-
+            positionInfo[-1] = 1 
             
-            
-
         # Save results if save is true and record condition is met 
         if (args.save and record):
             print('Results saved to result{}.jpg\n'.format(detected))
@@ -443,17 +472,6 @@ def cameraMode():
                 break
     
 
-def manualModeMouse():
-    app = QApplication([])
-    widget = MyWidget()
-    widget.show()
-    app.exec_()
-
-    # register mouse click at delay(0) so it just waits for it
-    # display mouse click coord
-    # display angle
-
-
 if __name__ == '__main__':
     # Instantiate YuNet
     model = YuNet(modelPath=args.model,
@@ -464,7 +482,8 @@ if __name__ == '__main__':
                   backendId=args.backend,
                   targetId=args.target)
 
-    cameraMode()
+    #Start main control mode 
+    mainMode()
     #manualModeMouse()
 
 cv.destroyAllWindows()
