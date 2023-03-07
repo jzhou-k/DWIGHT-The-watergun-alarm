@@ -5,6 +5,8 @@
 This is a automatic water gun alarm that shoots people in the face to wake them up. [^1]
 it will use esp32 camera module and opencv dnn model to detect faces and aim the watergun with 2 axis servos.
 
+![Alt Text](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/demo/turret.gif) 
+
 All functions:
 
 - alarm function, input wake up time using arg parser
@@ -29,7 +31,14 @@ More things to add:
 ## Demo
 
 Face detection: 
+
 ![Alt Text](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/demo/faceDetect.gif) 
+
+Joystick control: 
+
+![Alt Text](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/demo/joystick.gif) 
+
+
 
 
 insert photos and videos here
