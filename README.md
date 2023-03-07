@@ -20,8 +20,8 @@ Restrictions:
 - less detections with low lighting, might need to add a spotlight
 
 More things to add:
+- switch to raspberry pi 
 - spotlight
-- increase accuracy
 - finger commanding
 - mouth detection
 - display alarm time using a screen (my oled screen is broken :    ^) )
