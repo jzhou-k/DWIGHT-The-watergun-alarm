@@ -28,6 +28,10 @@ More things to add:
 
 ## Demo
 
+Face detection: 
+![Alt Text](https://github.com/jzhou-k/DWIGHT-The-watergun-alarm/blob/main/demo/faceDetect.gif) 
+
+
 insert photos and videos here
 
 ## Hardware
